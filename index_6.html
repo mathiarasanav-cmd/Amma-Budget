@@ -1,0 +1,984 @@
+<!DOCTYPE html>
+<html lang="ta">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#0b7a5c" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#0f4a3a" media="(prefers-color-scheme: dark)">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icon-192.png">
+<link rel="apple-touch-icon" href="icon-192.png">
+<title>அம்மா பட்ஜெட்</title>
+<style>
+:root {
+  color-scheme: light;
+  --bg: #f4f6f3; --card: #ffffff; --card2: #eef3ef; --line: #e1e7e2; --text: #16201b; --text2: #4d5a53; --muted: #7c8a82;
+  --pri: #0b7a5c; --pri2: #0e9470; --pri-soft: #dff1ea; --on-pri: #fff;
+  --bar: #2a78d6; --good: #0ca30c; --warn: #b57e00; --warn-bg: #fff4d6; --crit: #d03b3b; --crit-bg: #fde8e8;
+  --shadow: 0 1px 2px rgba(0,0,0,.05), 0 2px 8px rgba(0,0,0,.05);
+  font-size: 16px;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    color-scheme: dark;
+    --bg: #101412; --card: #1a201d; --card2: #232b27; --line: #2d3531; --text: #eef3f0; --text2: #b9c5bf; --muted: #8b9892;
+    --pri: #3fcf9e; --pri2: #5ad8ab; --pri-soft: #183a2f; --on-pri: #06281d; --bar: #3987e5;
+    --good: #5bd05b; --warn: #f0b93a; --warn-bg: #3a2f10; --crit: #ff8f8f; --crit-bg: #3b1818;
+    --shadow: 0 1px 2px rgba(0,0,0,.3); --hdr: #0f4a3a;
+  }
+}
+:root.fs1 { font-size: 18px; } :root.fs2 { font-size: 20px; }
+* { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+html, body { margin: 0; background: var(--bg); color: var(--text); }
+body { font-family: "Noto Sans Tamil", "Latha", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; line-height: 1.45; padding-bottom: calc(88px + env(safe-area-inset-bottom)); overscroll-behavior-y: contain; }
+button, input, select, textarea { font: inherit; color: inherit; }
+button { cursor: pointer; }
+.num { font-variant-numeric: tabular-nums; }
+
+/* header */
+header { position: sticky; top: 0; z-index: 20; background: var(--hdr, #0b7a5c); color: #fff; padding: calc(env(safe-area-inset-top) + 10px) 14px 10px; display: flex; align-items: center; gap: 8px; }
+header h1 { font-size: 1.15rem; margin: 0; font-weight: 700; flex: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+header .ib { background: rgba(255,255,255,.16); border: 0; color: inherit; height: 38px; min-width: 38px; border-radius: 19px; padding: 0 10px; font-size: .95rem; }
+#sync { font-size: .75rem; background: rgba(0,0,0,.18); padding: 4px 8px; border-radius: 10px; display: none; }
+#sync.on { display: inline-block; }
+.mbar { display: flex; align-items: center; justify-content: center; gap: 6px; padding: 10px 12px 0; }
+.mbar button { border: 1px solid var(--line); background: var(--card); width: 42px; height: 42px; border-radius: 21px; font-size: 1.2rem; }
+.mbar b { min-width: 170px; text-align: center; font-size: 1.05rem; }
+
+main { padding: 12px 12px 20px; max-width: 640px; margin: 0 auto; }
+.card { background: var(--card); border-radius: 18px; padding: 16px; margin-bottom: 12px; box-shadow: var(--shadow); }
+.card h2 { font-size: 1.02rem; margin: 0 0 10px; display: flex; align-items: center; gap: 8px; }
+.card h2 .r { margin-left: auto; font-size: .85rem; font-weight: 500; color: var(--pri); background: none; border: 0; padding: 4px; }
+.hero { background: linear-gradient(135deg, #0b7a5c, #12a07a); color: #fff; }
+@media (prefers-color-scheme: dark) { .hero { background: linear-gradient(135deg, #0e5a45, #127a5e); } }
+.hero .k { opacity: .9; font-size: .95rem; }
+.hero .big { font-size: 2.3rem; font-weight: 800; letter-spacing: -.5px; }
+.hero .s { opacity: .9; font-size: .88rem; }
+.hero .row { display: flex; gap: 8px; margin-top: 12px; }
+.hero .row button { flex: 1; border: 0; background: rgba(255,255,255,.2); color: #fff; border-radius: 12px; padding: 10px 6px; font-weight: 600; font-size: .9rem; }
+.k2 { color: var(--text2); font-size: .9rem; }
+.v2 { font-size: 1.6rem; font-weight: 800; }
+.meter { height: 10px; background: var(--card2); border-radius: 5px; overflow: hidden; margin: 10px 0 6px; }
+.meter i { display: block; height: 100%; background: var(--pri2); border-radius: 5px; transition: width .5s; }
+.meter i.over { background: var(--crit); }
+.note { color: var(--muted); font-size: .82rem; }
+.grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.mini { background: var(--card2); border-radius: 14px; padding: 10px 12px; }
+.mini .k2 { font-size: .8rem; }
+.mini b { font-size: 1.15rem; display: block; margin-top: 2px; }
+
+/* alerts */
+.al { display: flex; align-items: center; gap: 12px; padding: 12px; border-radius: 14px; margin-top: 8px; background: var(--card2); border: 0; width: 100%; text-align: left; }
+.al .ic { font-size: 1.6rem; width: 40px; text-align: center; }
+.al .t { flex: 1; } .al .t b { display: block; font-size: 1rem; } .al .t span { font-size: .85rem; color: var(--text2); }
+.al.crit { background: var(--crit-bg); } .al.crit .t span { color: var(--crit); font-weight: 600; }
+.al.warn { background: var(--warn-bg); } .al.warn .t span { color: var(--warn); font-weight: 600; }
+
+/* lists */
+.li { display: flex; align-items: center; gap: 12px; padding: 11px 2px; border-bottom: 1px solid var(--line); width: 100%; background: none; border-left: 0; border-right: 0; border-top: 0; text-align: left; }
+.li:last-child { border-bottom: 0; }
+.li .ic { width: 44px; height: 44px; border-radius: 12px; background: var(--card2); display: grid; place-items: center; font-size: 1.45rem; flex: none; }
+.li .t { flex: 1; min-width: 0; } .li .t b { display: block; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.li .t span { font-size: .82rem; color: var(--text2); }
+.li .a { text-align: right; font-weight: 700; white-space: nowrap; } .li .a small { display: block; font-weight: 400; color: var(--muted); font-size: .75rem; }
+.day { font-size: .85rem; color: var(--text2); font-weight: 600; margin: 14px 4px 4px; display: flex; }
+.day span { margin-left: auto; }
+.tag { display: inline-block; font-size: .72rem; padding: 1px 7px; border-radius: 8px; background: var(--pri-soft); color: var(--pri); font-weight: 600; margin-left: 4px; vertical-align: 1px; }
+.tag.son { background: var(--card2); color: var(--text2); }
+
+/* stock */
+.stk { padding: 12px 2px; border-bottom: 1px solid var(--line); display: flex; gap: 12px; align-items: center; background: none; border-left: 0; border-right: 0; border-top: 0; width: 100%; text-align: left; }
+.stk:last-child { border-bottom: 0; }
+.stk .ic { font-size: 1.6rem; width: 44px; height: 44px; border-radius: 12px; background: var(--card2); display: grid; place-items: center; flex: none; }
+.stk .t { flex: 1; min-width: 0; }
+.stk .t b { font-weight: 600; }
+.stk .lvl { height: 8px; background: var(--card2); border-radius: 4px; overflow: hidden; margin: 6px 0 3px; }
+.stk .lvl i { display: block; height: 100%; background: var(--pri2); border-radius: 4px; }
+.stk .lvl i.warn { background: #eda100; } .stk .lvl i.crit { background: var(--crit); }
+.stk .s { font-size: .82rem; color: var(--text2); display: flex; gap: 6px; }
+.stk .s .d { margin-left: auto; font-weight: 600; }
+.stk .s .d.crit { color: var(--crit); } .stk .s .d.warn { color: var(--warn); }
+
+/* chart */
+.chart svg { display: block; width: 100%; height: auto; }
+.chart text { fill: var(--text2); font-size: 11px; }
+.cbar { display: grid; grid-template-columns: 1fr auto; gap: 2px 10px; margin-bottom: 10px; font-size: .92rem; }
+.cbar .tr { grid-column: 1 / -1; height: 10px; background: var(--card2); border-radius: 5px; overflow: hidden; }
+.cbar .tr i { display: block; height: 100%; background: var(--bar); border-radius: 0 5px 5px 0; }
+
+/* nav + fab */
+nav#tabs { position: fixed; left: 0; right: 0; bottom: 0; z-index: 25; background: var(--card); border-top: 1px solid var(--line); display: flex; padding: 6px 4px calc(6px + env(safe-area-inset-bottom)); }
+nav#tabs button { flex: 1; border: 0; background: none; display: flex; flex-direction: column; align-items: center; gap: 2px; font-size: .75rem; color: var(--text2); padding: 4px 0; }
+nav#tabs button .i { font-size: 1.35rem; width: 60px; height: 32px; border-radius: 16px; display: grid; place-items: center; transition: background .2s; }
+nav#tabs button.on { color: var(--text); font-weight: 700; }
+nav#tabs button.on .i { background: var(--pri-soft); }
+#fab { position: fixed; right: 16px; bottom: calc(82px + env(safe-area-inset-bottom)); z-index: 26; border: 0; background: var(--pri); color: var(--on-pri); height: 58px; padding: 0 22px 0 18px; border-radius: 18px; font-size: 1.05rem; font-weight: 700; box-shadow: 0 6px 16px rgba(11,122,92,.35); display: flex; align-items: center; gap: 8px; }
+#fab span { font-size: 1.6rem; line-height: 1; }
+
+/* sheets */
+.sheet { position: fixed; inset: 0; z-index: 40; background: var(--bg); overflow-y: auto; animation: up .22s cubic-bezier(.2,.9,.3,1); padding-bottom: calc(100px + env(safe-area-inset-bottom)); }
+@keyframes up { from { transform: translateY(40px); opacity: 0; } }
+.sheet .sh { position: sticky; top: 0; z-index: 2; display: flex; align-items: center; gap: 10px; padding: calc(env(safe-area-inset-top) + 10px) 12px 10px; background: var(--card); border-bottom: 1px solid var(--line); }
+.sheet .sh b { flex: 1; font-size: 1.1rem; }
+.sheet .sh .x { border: 0; background: var(--card2); width: 42px; height: 42px; border-radius: 21px; font-size: 1.2rem; }
+.sheet .body { padding: 14px; max-width: 640px; margin: 0 auto; }
+.tiles { display: grid; grid-template-columns: repeat(auto-fill, minmax(92px, 1fr)); gap: 8px; }
+.tile { background: var(--card); border: 1px solid var(--line); border-radius: 16px; padding: 12px 4px 10px; display: flex; flex-direction: column; align-items: center; gap: 4px; font-size: .85rem; text-align: center; line-height: 1.2; min-height: 92px; }
+.tile .e { font-size: 1.9rem; }
+.tile:active { transform: scale(.96); background: var(--pri-soft); }
+.gh { font-size: .9rem; color: var(--text2); font-weight: 700; margin: 16px 2px 8px; }
+label.f { display: block; font-size: .9rem; color: var(--text2); margin: 14px 2px 6px; font-weight: 600; }
+.in { width: 100%; border: 1.5px solid var(--line); background: var(--card); border-radius: 14px; padding: 12px 14px; font-size: 1.05rem; outline: none; }
+.in:focus { border-color: var(--pri); }
+.in.big { font-size: 1.8rem; font-weight: 800; padding: 10px 14px; }
+.amt { display: flex; align-items: center; gap: 8px; }
+.amt .rs { font-size: 1.8rem; font-weight: 800; color: var(--text2); }
+.chips { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 8px; }
+.chip { border: 1.5px solid var(--line); background: var(--card); border-radius: 20px; padding: 7px 14px; font-size: .92rem; position: relative; }
+.chip.on { background: var(--pri); border-color: var(--pri); color: var(--on-pri); font-weight: 700; }
+.seg { display: flex; background: var(--card2); border-radius: 14px; padding: 4px; gap: 4px; }
+.seg button { flex: 1; border: 0; background: none; padding: 10px 6px; border-radius: 11px; font-size: .92rem; }
+.seg button.on { background: var(--card); font-weight: 700; box-shadow: var(--shadow); }
+.hint { margin-top: 8px; padding: 10px 12px; border-radius: 12px; background: var(--card2); font-size: .88rem; color: var(--text2); }
+.hint.warn { background: var(--warn-bg); color: var(--warn); font-weight: 600; }
+.hint.good { background: var(--pri-soft); color: var(--pri); font-weight: 600; }
+.btn { border: 0; border-radius: 16px; padding: 15px 18px; font-size: 1.05rem; font-weight: 700; width: 100%; background: var(--card2); }
+.btn.pri { background: var(--pri); color: var(--on-pri); }
+.btn.del { background: none; color: var(--crit); margin-top: 6px; }
+.btn:disabled { opacity: .45; }
+.savebar { position: fixed; left: 0; right: 0; bottom: 0; z-index: 41; padding: 10px 14px calc(10px + env(safe-area-inset-bottom)); background: var(--bg); border-top: 1px solid var(--line); }
+.savebar .btn { max-width: 612px; margin: 0 auto; display: block; }
+.selhead { display: flex; align-items: center; gap: 12px; background: var(--card); padding: 12px; border-radius: 16px; }
+.selhead .e { font-size: 2.2rem; }
+.selhead b { font-size: 1.15rem; display: block; }
+.selhead button { margin-left: auto; border: 0; background: var(--card2); border-radius: 12px; padding: 8px 12px; font-size: .85rem; }
+.qty { display: grid; grid-template-columns: 1fr 120px; gap: 8px; }
+table.ph { width: 100%; border-collapse: collapse; font-size: .88rem; }
+table.ph th, table.ph td { padding: 8px 4px; border-bottom: 1px solid var(--line); text-align: left; }
+table.ph th { color: var(--muted); font-weight: 600; font-size: .78rem; }
+table.ph .r { text-align: right; }
+table.ph tr.low td { color: var(--pri); font-weight: 700; }
+.bigbtns { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 8px; }
+.bigbtns button { border: 1.5px solid var(--line); background: var(--card); border-radius: 14px; padding: 12px 6px; font-size: .92rem; }
+.bigbtns button b { display: block; font-size: 1.1rem; }
+.empty { text-align: center; color: var(--muted); padding: 24px 8px; font-size: .92rem; }
+.toast { position: fixed; left: 50%; bottom: calc(160px + env(safe-area-inset-bottom)); transform: translateX(-50%); background: var(--text); color: var(--bg); padding: 12px 18px; border-radius: 14px; z-index: 90; font-size: .95rem; max-width: 90vw; text-align: center; animation: up .2s; }
+.enter > * { animation: fade .25s ease both; } .enter > *:nth-child(2) { animation-delay: .03s; } .enter > *:nth-child(3) { animation-delay: .06s; } .enter > *:nth-child(n+4) { animation-delay: .09s; }
+@keyframes fade { from { opacity: 0; transform: translateY(8px); } }
+@media (prefers-reduced-motion: reduce) { .enter > *, .sheet, .toast { animation: none; } }
+
+/* login */
+#login { position: fixed; inset: 0; z-index: 100; background: var(--bg); display: none; align-items: center; justify-content: center; padding: 20px; }
+#login.on { display: flex; }
+#login .box { width: 100%; max-width: 380px; text-align: center; }
+#login img { width: 88px; height: 88px; border-radius: 22px; }
+#login h2 { margin: 12px 0 4px; }
+#login .err { color: var(--crit); min-height: 22px; margin-top: 8px; font-weight: 600; }
+#install { display: none; }
+
+/* ===== v2: compact home, voice, ledger ===== */
+.hero.v2 { padding: 14px 16px; }
+.hero.v2 .big { font-size: 2.1rem; }
+.hero .hmini { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; margin-top: 8px; }
+.hero .hmini div { background: rgba(255,255,255,.14); border-radius: 10px; padding: 6px 8px; }
+.hero .hmini span { display: block; font-size: .72rem; opacity: .9; }
+.hero .hmini b { font-size: 1rem; }
+.meter.light { background: rgba(255,255,255,.25); margin: 10px 0 2px; height: 7px; }
+.meter.light i { background: #fff; } .meter.light i.over { background: #ffb3b3; }
+.qgrid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; }
+.qt { border: 1px solid var(--line); background: var(--card2); border-radius: 14px; padding: 8px 4px; display: flex; flex-direction: column; align-items: center; gap: 2px; min-height: 86px; }
+.qt .e { font-size: 1.6rem; line-height: 1.2; } .qt .n { font-size: .72rem; line-height: 1.2; text-align: center; color: var(--text2); }
+.qt .p { font-size: .8rem; font-weight: 700; color: var(--pri); }
+#mic { position: fixed; left: 16px; bottom: calc(82px + env(safe-area-inset-bottom)); z-index: 26; width: 58px; height: 58px; border-radius: 29px; border: 0; background: #e8505b; color: #fff; font-size: 1.6rem; box-shadow: 0 4px 14px rgba(0,0,0,.25); }
+.vlisten { position: fixed; inset: 0; z-index: 60; background: rgba(0,0,0,.45); display: flex; align-items: flex-end; }
+.vlisten .vbox { background: var(--card); width: 100%; border-radius: 22px 22px 0 0; padding: 24px 18px calc(24px + env(safe-area-inset-bottom)); text-align: center; display: grid; gap: 10px; }
+.vmic { font-size: 3rem; animation: vp 1.2s ease-in-out infinite; }
+@keyframes vp { 50% { transform: scale(1.18); } }
+.vlive { min-height: 1.4em; font-weight: 600; color: var(--pri); }
+.vheard { background: var(--card2); border-radius: 12px; padding: 10px 12px; margin-bottom: 10px; }
+.vrow { display: flex; align-items: center; gap: 8px; padding: 8px 0; border-bottom: 1px solid var(--line); }
+.vrow .e { font-size: 1.5rem; } .vrow .vt { flex: 1; min-width: 0; } .vrow .vt b { display: block; }
+.vrow .vq { font-size: .85rem; color: var(--text2); } .vrow .vq input { width: 70px; padding: 4px 8px; display: inline-block; }
+.vrow .vamt { width: 96px; font-weight: 700; } .vrow .rs { color: var(--muted); }
+.vx { border: 0; background: none; color: var(--muted); font-size: 1.1rem; padding: 6px; }
+.chip.again { display: block; width: 100%; text-align: left; margin: 0 0 8px; background: var(--pri-soft); color: var(--pri); border-color: transparent; font-weight: 600; }
+.btn.more { flex: 0 0 auto; margin-right: 8px; background: var(--card2); color: var(--pri); }
+.ledsum { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; margin-bottom: 10px; }
+.ledsum div { background: var(--card2); border-radius: 10px; padding: 6px 8px; } .ledsum span { display: block; font-size: .72rem; color: var(--muted); }
+.ledsum b { font-size: .95rem; } .ledsum .plus b { color: var(--good); } .ledsum .minus b { color: var(--crit); } .ledsum .tot { background: var(--pri-soft); }
+table.led { width: 100%; border-collapse: collapse; font-size: .85rem; } table.led th { text-align: left; color: var(--muted); font-weight: 500; padding: 4px; }
+table.led td { padding: 6px 4px; border-top: 1px solid var(--line); } table.led .r { text-align: right; }
+table.led td.plus { color: var(--good); font-weight: 700; } table.led td.minus { color: var(--crit); }
+</style>
+</head>
+<body>
+<header>
+  <h1 id="title">அம்மா பட்ஜெட்</h1>
+  <span id="sync"></span>
+  <button class="ib" id="gear" aria-label="அமைப்புகள்">⚙️</button>
+</header>
+<div id="mbar" class="mbar"></div>
+<main id="main"><div class="empty">ஏற்றுகிறது…</div></main>
+<button id="fab" aria-label="வாங்கியதை சேர்"><span>+</span>வாங்கியது</button>
+<nav id="tabs">
+  <button data-tab="home"><span class="i">🏠</span>முகப்பு</button>
+  <button data-tab="buys"><span class="i">🧾</span>வாங்கியவை</button>
+  <button data-tab="stock"><span class="i">📦</span>இருப்பு</button>
+  <button data-tab="money"><span class="i">📊</span>கணக்கு</button>
+</nav>
+
+<div id="login"><div class="box">
+  <img src="icon-192.png" alt="">
+  <h2>அம்மா பட்ஜெட்</h2>
+  <div class="note">முதல் முறை மட்டும் இணைக்கவும்</div>
+  <div id="lgUrlW"><label class="f" for="lgUrl">ஆப் இணைப்பு (/exec)</label><input class="in" id="lgUrl" type="url" autocomplete="off" placeholder="https://script.google.com/macros/s/…/exec" style="font-size:.9rem"></div>
+  <label class="f" for="lgPin">PIN</label>
+  <input class="in big" id="lgPin" type="password" autocomplete="current-password" style="text-align:center;letter-spacing:4px">
+  <div class="err" id="lgErr"></div>
+  <button class="btn pri" id="lgBtn">திற</button>
+  <button class="btn" id="lgChg" style="background:none;color:var(--pri);font-size:.9rem;display:none">இணைப்பை மாற்று</button>
+</div></div>
+
+<script>
+/* ================== basics ================== */
+var D = null, TAB = 'home', M = ym(new Date());
+function $(id) { return document.getElementById(id); }
+function ls(k, v) { try { if (arguments.length === 1) return localStorage.getItem(k); v == null ? localStorage.removeItem(k) : localStorage.setItem(k, v); } catch (e) { return null; } }
+function esc(s) { return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); }
+function num(v) { return v === '' || v == null ? 0 : Number(v) || 0; }
+function sum(a, f) { return a.reduce(function (t, x) { return t + (f ? f(x) : x); }, 0); }
+function ym(d) { return d.getFullYear() + '-' + ('0' + (d.getMonth() + 1)).slice(-2); }
+function iso(d) { return ym(d) + '-' + ('0' + d.getDate()).slice(-2); }
+function today() { return iso(new Date()); }
+function pd(s) { return new Date(s + 'T00:00:00'); }
+function addDays(s, n) { var d = pd(s); d.setDate(d.getDate() + n); return iso(d); }
+function daysBetween(a, b) { return Math.round((pd(b) - pd(a)) / 864e5); }
+function addM(m, n) { var p = m.split('-'); return ym(new Date(+p[0], +p[1] - 1 + n, 1)); }
+function monthEnd(m) { var p = m.split('-'); return iso(new Date(+p[0], +p[1], 0)); }
+var MN = ['ஜனவரி', 'பிப்ரவரி', 'மார்ச்', 'ஏப்ரல்', 'மே', 'ஜூன்', 'ஜூலை', 'ஆகஸ்ட்', 'செப்டம்பர்', 'அக்டோபர்', 'நவம்பர்', 'டிசம்பர்'];
+var MS = ['ஜன', 'பிப்', 'மார்', 'ஏப்', 'மே', 'ஜூன்', 'ஜூலை', 'ஆக', 'செப்', 'அக்', 'நவ', 'டிச'];
+function mLabel(m, s) { var p = m.split('-'); return (s ? MS : MN)[+p[1] - 1] + ' ' + (s ? p[0].slice(2) : p[0]); }
+function dLabel(s) { if (!s) return ''; var d = pd(s), t = today(); if (s === t) return 'இன்று'; if (s === addDays(t, -1)) return 'நேற்று'; return d.getDate() + ' ' + MS[d.getMonth()] + (s.slice(0, 4) !== t.slice(0, 4) ? ' ' + s.slice(0, 4) : ''); }
+function inr(n) { if (n === '' || n == null || isNaN(n)) return '—'; return (n < -0.5 ? '−' : '') + '₹' + Math.round(Math.abs(n)).toLocaleString('en-IN'); }
+function r1(n) { return Math.round(n * 10) / 10; }
+function fq(n) { n = Math.round(n * 100) / 100; return String(n); }
+var UNITS = { kg: 'கிலோ', g: 'கிராம்', L: 'லிட்டர்', pcs: 'எண்ணம்', pkt: 'பாக்கெட்' };
+function conv(q, from, to) { if (from === to || !from || !to) return q; if (from === 'g' && to === 'kg') return q / 1000; if (from === 'kg' && to === 'g') return q * 1000; return q; }
+function uL(u) { return UNITS[u] || u || ''; }
+function evalAmt(s) { s = String(s).replace(/[,₹\s]/g, ''); if (!/^[0-9.+]+$/.test(s)) return NaN; return s.split('+').reduce(function (t, p) { return t + (Number(p) || 0); }, 0); }
+function toast(m) { document.querySelectorAll('.toast').forEach(function (t) { t.remove(); }); var t = document.createElement('div'); t.className = 'toast'; t.textContent = m; document.body.appendChild(t); setTimeout(function () { t.remove(); }, 2600); }
+function setting(k, d) { var r = D && D.Settings.find(function (x) { return x.Key === k; }); return r && r.Value !== '' ? r.Value : d; }
+function son() { return setting('SonName', 'மதி'); }
+var CATS = ['மளிகை', 'காய்கறி & பழம்', 'பால்', 'அசைவம்', 'மருந்து', 'வீட்டு பொருட்கள்', 'கட்டணங்கள்', 'மற்றவை'];
+var fs = +(ls('ab_fs') || 0); document.documentElement.className = fs ? 'fs' + fs : '';
+
+/* ================== backend + offline queue ================== */
+var API = ls('ab_api'), TOK = ls('ab_tok'), OB = JSON.parse(ls('ab_ob') || '[]'), flushing = false;
+(function () { var m = location.hash.match(/api=([^&]+)/); if (m) { var u = decodeURIComponent(m[1]); if (/^https:\/\/script\.google\.com\/macros\/s\/.+\/exec$/.test(u) && u !== API) { API = u; ls('ab_api', u); TOK = null; ls('ab_tok', null); } history.replaceState(null, '', location.pathname); } })();
+function post(body) { return fetch(API, { method: 'POST', body: JSON.stringify(body), headers: { 'Content-Type': 'text/plain;charset=utf-8' } }).then(function (r) { return r.json(); }); }
+function call(fn, args) { return post({ action: 'call', token: TOK, fn: fn, args: args || [] }).then(function (j) { if (!j.ok) { if (j.error === 'AUTH') { TOK = null; ls('ab_tok', null); showLogin('மீண்டும் PIN தேவை'); } throw new Error(j.error); } return j.result; }); }
+function keyOf(t) { return t === 'Settings' ? 'Key' : 'ID'; }
+function applyLocal(o) {
+  var arr = D[o.table], k = keyOf(o.table), i = arr.findIndex(function (r) { return String(r[k]) === String(o.obj[k]); });
+  if (o.op === 'remove') { if (i >= 0) arr.splice(i, 1); }
+  else if (i >= 0) arr[i] = Object.assign({}, arr[i], o.obj); else arr.push(Object.assign({}, o.obj));
+}
+function cacheD() { try { localStorage.setItem('ab_data', JSON.stringify(D)); } catch (e) {} }
+function queue(op, table, obj) { var o = { op: op, table: table, obj: obj }; applyLocal(o); OB.push(o); ls('ab_ob', JSON.stringify(OB)); cacheD(); syncPill(); flush(); }
+function save(table, obj) {
+  if (keyOf(table) === 'ID' && !obj.ID) obj.ID = 'a' + Date.now().toString(36) + Math.random().toString(36).slice(2, 5);
+  if (obj.Date && ['Purchases', 'Cash'].indexOf(table) >= 0) obj.Month = obj.Date.slice(0, 7);
+  if (['Purchases', 'Cash', 'Checks'].indexOf(table) >= 0 && !obj.CreatedAt) obj.CreatedAt = new Date().toISOString();
+  queue('upsert', table, obj); render();
+}
+function del(table, id) { var o = {}; o[keyOf(table)] = id; queue('remove', table, o); render(); }
+function flush() {
+  if (flushing || !OB.length || !TOK) return;
+  flushing = true; var ops = OB.slice(); syncPill();
+  call('batch', [ops]).then(function () { OB.splice(0, ops.length); ls('ab_ob', JSON.stringify(OB)); flushing = false; syncPill(); if (OB.length) flush(); })
+    .catch(function () { flushing = false; syncPill(); setTimeout(flush, 20000); });
+}
+function syncPill() { var s = $('sync'); s.className = OB.length ? 'on' : ''; s.textContent = flushing ? '⟳ சேமிக்கிறது…' : '📶 ' + OB.length + ' காத்திருக்கிறது'; }
+window.addEventListener('online', flush);
+function load(quiet) {
+  if (!D) { var c = ls('ab_data'); if (c) { try { D = JSON.parse(c); render(); } catch (e) {} } }
+  if (!API || !TOK) { showLogin(); return; }
+  call('getAll').then(function (d) { D = d; OB.forEach(applyLocal); cacheD(); render(); flush(); if (quiet === 'toast') toast('புதுப்பிக்கப்பட்டது ✓'); })
+    .catch(function (e) { if (!D && TOK) $('main').innerHTML = '<div class="card empty">இணையம் இல்லை. இணைந்ததும் மீண்டும் திறக்கவும்.<br><br><button class="btn pri" onclick="load()">மீண்டும் முயற்சி</button></div>'; });
+}
+
+/* ================== login ================== */
+function showLogin(msg) {
+  $('login').classList.add('on'); $('lgErr').textContent = msg || '';
+  var has = !!API; $('lgUrlW').style.display = has ? 'none' : ''; $('lgChg').style.display = has ? '' : 'none';
+  if (API) $('lgUrl').value = API; setTimeout(function () { (has ? $('lgPin') : $('lgUrl')).focus(); }, 100);
+}
+$('lgChg').onclick = function () { $('lgUrlW').style.display = ''; this.style.display = 'none'; $('lgUrl').focus(); };
+$('lgBtn').onclick = function () {
+  var u = $('lgUrl').value.trim() || API, pin = $('lgPin').value.trim(), b = this;
+  if (!/^https:\/\/script\.google\.com\/macros\/s\/.+\/exec$/.test(u || '')) { $('lgErr').textContent = 'சரியான /exec இணைப்பை ஒட்டவும்'; $('lgUrlW').style.display = ''; return; }
+  if (!pin) { $('lgErr').textContent = 'PIN போடவும்'; return; }
+  API = u; b.disabled = true; b.textContent = 'காத்திருக்கவும்…';
+  post({ action: 'login', pin: pin }).then(function (j) {
+    b.disabled = false; b.textContent = 'திற';
+    if (!j.ok) { $('lgErr').textContent = { WRONGPIN: 'PIN தவறு', LOCKED: 'பல முறை தவறு. 15 நிமிடம் கழித்து முயற்சிக்கவும்', SETPIN: 'Code.gs-ல் APP_PIN மாற்றவும்' }[j.error] || j.error; return; }
+    TOK = j.token; ls('ab_api', API); ls('ab_tok', TOK); $('lgPin').value = ''; $('login').classList.remove('on'); load();
+  }).catch(function () { b.disabled = false; b.textContent = 'திற'; $('lgErr').textContent = 'இணையம் / இணைப்பை சரிபார்க்கவும்'; });
+};
+$('lgPin').addEventListener('keydown', function (e) { if (e.key === 'Enter') $('lgBtn').click(); });
+
+/* ================== calculations ================== */
+function items(all) { return D.Items.filter(function (i) { return all || i.Active; }).sort(function (a, b) { return num(a.Order) - num(b.Order); }); }
+function item(id) { return D.Items.find(function (i) { return i.ID === id; }); }
+function pName(p) { var it = item(p.ItemID); return p.Name || (it ? it.Name : 'மற்றவை'); }
+function pIcon(p) { var it = item(p.ItemID); return it ? it.Icon : '🛍️'; }
+function pCat(p) { var it = item(p.ItemID); return p.Cat || (it ? it.Cat : 'மற்றவை'); }
+// Spread a purchase over the days it lasts → { 'YYYY-MM': amount }
+function alloc(p) {
+  var out = {}, m = num(p.Months), a = num(p.Amount);
+  if (!(m > 0)) { out[p.Month || String(p.Date).slice(0, 7)] = a; return out; }
+  var days = Math.max(1, Math.round(m * 30.4375)), perDay = a / days, cur = pd(p.Date), left = days;
+  while (left > 0) {
+    var next = new Date(cur.getFullYear(), cur.getMonth() + 1, 1), seg = Math.min(left, Math.round((next - cur) / 864e5)), k = ym(cur);
+    out[k] = (out[k] || 0) + perDay * seg; left -= seg; cur = next;
+  }
+  return out;
+}
+var CACHE = null;
+function calc() {
+  if (CACHE) return CACHE;
+  var byM = {}, byMC = {};
+  D.Purchases.forEach(function (p) { var al = alloc(p), c = pCat(p); Object.keys(al).forEach(function (k) { byM[k] = (byM[k] || 0) + al[k]; (byMC[k] = byMC[k] || {})[c] = (byMC[k][c] || 0) + al[k]; }); });
+  return (CACHE = { byM: byM, byMC: byMC });
+}
+function realCost(m) { return calc().byM[m] || 0; }
+function paidIn(m) { return sum(D.Purchases.filter(function (p) { return p.Month === m; }), function (p) { return num(p.Amount); }); }
+function receivedIn(m) { return sum(D.Cash.filter(function (c) { return c.Month === m && c.Kind !== 'opening'; }), function (c) { return num(c.Amount); }); }
+function carried(m) { var end = monthEnd(m), t = 0; D.Purchases.forEach(function (p) { if (p.Date > end) return; var al = alloc(p); Object.keys(al).forEach(function (k) { if (k > m) t += al[k]; }); }); return t; }
+function inHand() { return sum(D.Cash, function (c) { return num(c.Amount); }) - sum(D.Purchases.filter(function (p) { return p.PaidBy !== 'son'; }), function (p) { return num(p.Amount); }); }
+function budget() { return num(setting('Budget', 15000)); }
+// stock level of an item today
+function stock(it) {
+  var rate = num(it.PerMonth) / 30.4375, ev = [];
+  D.Purchases.forEach(function (p) { if (p.ItemID === it.ID && num(p.Qty) > 0) ev.push({ d: p.Date, c: String(p.CreatedAt), q: conv(num(p.Qty), p.Unit, it.Unit) }); });
+  D.Checks.forEach(function (c) { if (c.ItemID === it.ID) ev.push({ d: c.Date, c: String(c.CreatedAt), set: num(c.Left) }); });
+  if (!ev.length) return null;
+  ev.sort(function (a, b) { return a.d < b.d ? -1 : a.d > b.d ? 1 : a.c < b.c ? -1 : 1; });
+  var rem = 0, last = null, lastBuy = 0, t = today();
+  ev.forEach(function (e) { if (last) rem = Math.max(0, rem - rate * Math.max(0, daysBetween(last, e.d))); if (e.set !== undefined) rem = e.set; else { rem += e.q; lastBuy = e.q; } last = e.d; });
+  rem = Math.max(0, rem - rate * Math.max(0, daysBetween(last, t)));
+  var days = rate > 0 ? rem / rate : Infinity, cap = Math.max(lastBuy, num(it.PerMonth), rem, 0.01);
+  return { left: rem, days: days, pct: Math.min(100, rem / cap * 100), level: rem <= 0.001 ? 'crit' : days <= 7 ? 'crit' : days <= 14 ? 'warn' : 'ok', lastBuy: lastBuy };
+}
+function billDue(it) {
+  var ps = D.Purchases.filter(function (p) { return p.ItemID === it.ID; }).sort(function (a, b) { return a.Date < b.Date ? 1 : -1; });
+  if (!ps.length) return null;
+  var p = ps[0], m = num(p.Months) || num(it.CycleMonths) || 1, whole = Math.floor(m), d = pd(p.Date);
+  d = new Date(d.getFullYear(), d.getMonth() + whole, d.getDate()); var due = addDays(iso(d), Math.round((m - whole) * 30.4375));
+  return { last: p, due: due, days: daysBetween(today(), due) };
+}
+function daysText(n) { n = Math.round(n); return n <= 0 ? 'இன்று' : n === 1 ? 'நாளை' : n + ' நாளில்'; }
+function stockText(s) { if (!s) return ''; if (s.left <= 0.001) return 'தீர்ந்திருக்கலாம்'; if (!isFinite(s.days)) return 'மீதம்'; var d = Math.round(s.days); return d <= 0 ? 'இன்று தீரலாம்' : 'சுமார் ' + (d > 60 ? r1(d / 30.4) + ' மாதம்' : d + ' நாள்') + ' வரும்'; }
+function alerts() {
+  var low = [], due = [];
+  items().forEach(function (it) {
+    if (it.Kind === 'stock') { var s = stock(it); if (s && s.level !== 'ok') low.push({ it: it, s: s }); }
+    if (it.Kind === 'bill') { var b = billDue(it); if (b && b.days <= 10) due.push({ it: it, b: b }); }
+  });
+  low.sort(function (a, b) { return a.s.days - b.s.days; }); due.sort(function (a, b) { return a.b.days - b.b.days; });
+  return { low: low, due: due };
+}
+function priceHist(id) { return D.Purchases.filter(function (p) { return p.ItemID === id && num(p.Amount) > 0; }).sort(function (a, b) { return a.Date < b.Date ? 1 : -1; }); }
+function unitPrice(p) { return num(p.Qty) > 0 ? num(p.Amount) / num(p.Qty) : null; }
+
+/* ================== render ================== */
+var lastTab = null;
+function render() {
+  if (!D) return;
+  CACHE = null;
+  ['Items', 'Purchases', 'Cash', 'Checks', 'Settings'].forEach(function (k) { D[k] = D[k] || []; });
+  document.querySelectorAll('#tabs button').forEach(function (b) { b.classList.toggle('on', b.dataset.tab === TAB); });
+  $('mbar').innerHTML = TAB === 'buys' || TAB === 'money' ? '<button data-m="-1" aria-label="முந்தைய மாதம்">‹</button><b>' + mLabel(M) + '</b><button data-m="1" aria-label="அடுத்த மாதம்">›</button>' : '';
+  $('fab').style.display = TAB === 'money' ? 'none' : '';
+  var y = window.scrollY;
+  $('main').innerHTML = { home: vHome, buys: vBuys, stock: vStock, money: vMoney }[TAB]();
+  if (TAB !== lastTab) { $('main').classList.remove('enter'); void $('main').offsetWidth; $('main').classList.add('enter'); window.scrollTo(0, 0); } else window.scrollTo(0, y);
+  lastTab = TAB;
+  if (TAB === 'money') drawChart();
+}
+
+function pRow(p) {
+  var it = item(p.ItemID), m = num(p.Months);
+  var sub = [num(p.Qty) ? fq(p.Qty) + ' ' + uL(p.Unit) : '', p.Shop || '', m > 0 ? r1(m) + ' மாதம்' : ''].filter(Boolean).join(' · ');
+  return '<button class="li" data-editp="' + p.ID + '"><span class="ic">' + pIcon(p) + '</span><span class="t"><b>' + esc(pName(p)) + (p.PaidBy === 'son' ? '<span class="tag son">' + esc(son()) + '</span>' : '') + '</b><span>' + esc(sub || pCat(p)) + (p.Note ? ' · ' + esc(p.Note) : '') + '</span></span><span class="a num">' + inr(p.Amount) + (m > 0 ? '<small>மாதம் ' + inr(num(p.Amount) / m) + '</small>' : '') + '</span></button>';
+}
+
+function vHome() {
+  var cm = ym(new Date()), hand = inHand(), cost = realCost(cm), b = budget(), al = alerts();
+  var h = '<div class="card hero"><div class="k">கையிருப்பு பணம்</div><div class="big num">' + inr(hand) + '</div><div class="s">இந்த மாதம் பெற்றது ' + inr(receivedIn(cm)) + ' · வாங்கியது ' + inr(paidIn(cm)) + '</div>' +
+    '<div class="row"><button data-act="cash">💵 பணம் பெற்றேன்</button><button data-act="share">📤 ' + esc(son()) + 'க்கு அனுப்பு</button></div></div>';
+  h += '<div class="card"><h2>' + MN[+cm.slice(5) - 1] + ' மாத செலவு<button class="r" data-act="budget">பட்ஜெட் ✎</button></h2><div class="grid2" style="align-items:end"><div><div class="k2">செலவு</div><div class="v2 num">' + inr(cost) + '</div></div><div style="text-align:right"><div class="k2">பட்ஜெட்</div><div class="num" style="font-weight:700;font-size:1.15rem">' + inr(b) + '</div></div></div>' +
+    '<div class="meter"><i class="' + (cost > b ? 'over' : '') + '" style="width:' + Math.min(100, b ? cost / b * 100 : 0) + '%"></i></div><div style="font-weight:700;color:' + (cost > b ? 'var(--crit)' : 'var(--pri)') + '">' + (cost > b ? inr(cost - b) + ' பட்ஜெட்டை விட அதிகம்' : inr(b - cost) + ' மீதம் உள்ளது') + '</div>' +
+    '<div class="note" style="margin-top:6px">மொத்தமாக வாங்கியவை (எண்ணெய், அரிசி, பிராட்பேண்ட்…) அவை வரும் மாதங்களுக்கு பிரித்து கணக்கிடப்படுகின்றன.</div></div>';
+  if (al.low.length || al.due.length) {
+    h += '<div class="card"><h2>⚠️ கவனிக்க வேண்டியவை</h2>' +
+      al.low.map(function (x) { return '<button class="al ' + x.s.level + '" data-item="' + x.it.ID + '"><span class="ic">' + x.it.Icon + '</span><span class="t"><b>' + esc(x.it.Name) + '</b><span>' + stockText(x.s) + (x.s.left > 0.001 ? ' · ' + fq(r1(x.s.left)) + ' ' + uL(x.it.Unit) + ' மீதம்' : '') + '</span></span><span>›</span></button>'; }).join('') +
+      al.due.map(function (x) { return '<button class="al ' + (x.b.days <= 3 ? 'crit' : 'warn') + '" data-buy="' + x.it.ID + '"><span class="ic">' + x.it.Icon + '</span><span class="t"><b>' + esc(x.it.Name) + '</b><span>' + (x.b.days < 0 ? -x.b.days + ' நாள் தாமதம்' : 'கட்ட வேண்டியது ' + daysText(x.b.days)) + ' · ' + dLabel(x.b.due) + '</span></span><span class="num" style="font-weight:700">' + inr(x.b.last.Amount) + '</span></button>'; }).join('') + '</div>';
+  }
+  var rec = D.Purchases.slice().sort(function (a, b) { return a.Date < b.Date ? 1 : a.Date > b.Date ? -1 : String(b.CreatedAt).localeCompare(String(a.CreatedAt)); }).slice(0, 6);
+  h += '<div class="card"><h2>சமீபத்தில் வாங்கியவை<button class="r" data-tab="buys">அனைத்தும் ›</button></h2>' + (rec.length ? rec.map(pRow).join('') : '<div class="empty">இன்னும் எதுவும் இல்லை. கீழே உள்ள <b>+ வாங்கியது</b> அழுத்தவும்.</div>') + '</div>';
+  h += '<button class="card" id="install" style="width:100%;border:0;text-align:left;font-weight:700;color:var(--pri);display:' + (window.__bip ? 'block' : 'none') + '">📲 இதை போனில் ஆப்பாக நிறுவு</button>';
+  return h;
+}
+
+function vBuys() {
+  var list = D.Purchases.filter(function (p) { return p.Month === M; }).sort(function (a, b) { return a.Date < b.Date ? 1 : a.Date > b.Date ? -1 : String(b.CreatedAt).localeCompare(String(a.CreatedAt)); });
+  var h = '<div class="card"><div class="grid2"><div class="mini"><div class="k2">வாங்கியது (கொடுத்த பணம்)</div><b class="num">' + inr(paidIn(M)) + '</b></div><div class="mini"><div class="k2">இந்த மாத உண்மை செலவு</div><b class="num">' + inr(realCost(M)) + '</b></div></div><div class="note" style="margin-top:8px">' + list.length + ' பதிவுகள் · தொட்டு மாற்றலாம்</div></div>';
+  if (!list.length) return h + '<div class="card empty">' + mLabel(M) + ' மாதத்தில் எதுவும் இல்லை.</div>';
+  var day = '';
+  h += '<div class="card" style="padding-top:4px">';
+  list.forEach(function (p) {
+    if (p.Date !== day) { day = p.Date; h += '<div class="day">' + dLabel(day) + '<span class="num">' + inr(sum(list.filter(function (x) { return x.Date === day; }), function (x) { return num(x.Amount); })) + '</span></div>'; }
+    h += pRow(p);
+  });
+  return h + '</div>';
+}
+
+function vStock() {
+  var st = items().filter(function (i) { return i.Kind === 'stock'; }).map(function (it) { return { it: it, s: stock(it) }; });
+  st.sort(function (a, b) { return (a.s ? a.s.days : 1e9) - (b.s ? b.s.days : 1e9); });
+  var h = '<div class="card"><h2>📦 வீட்டில் உள்ள பொருட்கள்</h2><div class="note" style="margin-bottom:6px">தொட்டு "இப்போது எவ்வளவு இருக்கிறது" என்று சரிசெய்யுங்கள் — ஆப் மாத பயன்பாட்டை தானாக கற்றுக்கொள்ளும்.</div>';
+  h += st.map(function (x) {
+    var s = x.s, it = x.it;
+    if (!s) return '<button class="stk" data-item="' + it.ID + '"><span class="ic">' + it.Icon + '</span><span class="t"><b>' + esc(it.Name) + '</b><span class="s"><span>இன்னும் பதிவு இல்லை</span><span class="d" style="color:var(--pri)">+ சேர்</span></span></span></button>';
+    return '<button class="stk" data-item="' + it.ID + '"><span class="ic">' + it.Icon + '</span><span class="t"><b>' + esc(it.Name) + '</b><div class="lvl"><i class="' + (s.level === 'ok' ? '' : s.level) + '" style="width:' + Math.max(3, s.pct) + '%"></i></div><span class="s"><span class="num">' + fq(r1(s.left)) + ' ' + uL(it.Unit) + ' மீதம்</span><span class="d ' + (s.level === 'ok' ? '' : s.level) + '">' + stockText(s) + '</span></span></span></button>';
+  }).join('') + '</div>';
+  var bills = items().filter(function (i) { return i.Kind === 'bill'; });
+  h += '<div class="card"><h2>🧾 கட்டணங்கள்</h2>' + bills.map(function (it) {
+    var b = billDue(it);
+    return '<button class="li" data-buy="' + it.ID + '"><span class="ic">' + it.Icon + '</span><span class="t"><b>' + esc(it.Name) + '</b><span>' + (b ? 'கடைசியாக ' + dLabel(b.last.Date) + ' · ' + inr(b.last.Amount) + ' · ' + r1(num(b.last.Months) || num(it.CycleMonths)) + ' மாதம்' : 'இன்னும் பதிவு இல்லை · ' + r1(num(it.CycleMonths)) + ' மாதத்திற்கு ஒருமுறை') + '</span></span><span class="a">' + (b ? '<span style="color:' + (b.days <= 3 ? 'var(--crit)' : b.days <= 10 ? 'var(--warn)' : 'var(--text2)') + '">' + (b.days < 0 ? -b.days + ' நாள் தாமதம்' : daysText(b.days)) + '</span><small>' + dLabel(b.due) + '</small>' : '<span style="color:var(--pri)">+ சேர்</span>') + '</span></button>';
+  }).join('') + '</div>';
+  return h;
+}
+
+function vMoney() {
+  var cost = realCost(M), b = budget(), byC = calc().byMC[M] || {};
+  var h = '<div class="card"><div class="grid2"><div class="mini"><div class="k2">உண்மை செலவு</div><b class="num" style="color:' + (cost > b ? 'var(--crit)' : 'inherit') + '">' + inr(cost) + '</b></div><div class="mini"><div class="k2">பட்ஜெட்</div><b class="num">' + inr(b) + '</b></div>' +
+    '<div class="mini"><div class="k2">வாங்கியது (பணம்)</div><b class="num">' + inr(paidIn(M)) + '</b></div><div class="mini"><div class="k2">பெற்ற பணம்</div><b class="num">' + inr(receivedIn(M)) + '</b></div></div>' +
+    '<div class="hint" style="margin-top:10px">அடுத்த மாதங்களுக்கான இருப்பு மதிப்பு: <b class="num">' + inr(carried(M)) + '</b><br><span class="note">மொத்தமாக வாங்கியதில் இன்னும் பயன்படாத பகுதி</span></div></div>';
+  h += '<div class="card"><h2>6 மாத செலவு</h2><div class="chart" id="chart"></div><div class="note">கோடு = பட்ஜெட் · மாதத்தை தொட்டு பார்க்கவும்</div></div>';
+  var cs = Object.keys(byC).map(function (c) { return [c, byC[c]]; }).sort(function (a, b) { return b[1] - a[1]; }), mx = cs.length ? cs[0][1] : 1;
+  h += '<div class="card"><h2>வகை வாரியாக</h2>' + (cs.length ? cs.map(function (c) { return '<div class="cbar"><span>' + esc(c[0]) + '</span><b class="num">' + inr(c[1]) + ' <span class="note">' + Math.round(c[1] / cost * 100) + '%</span></b><div class="tr"><i style="width:' + (c[1] / mx * 100) + '%"></i></div></div>'; }).join('') : '<div class="empty">இந்த மாதம் செலவு இல்லை</div>') + '</div>';
+  var cash = D.Cash.filter(function (c) { return c.Month === M; }).sort(function (a, b) { return a.Date < b.Date ? 1 : -1; });
+  h += '<div class="card"><h2>💵 பெற்ற பணம்<button class="r" data-act="cash">+ சேர்</button></h2>' + (cash.length ? cash.map(function (c) { return '<button class="li" data-editc="' + c.ID + '"><span class="ic">' + (c.Kind === 'opening' ? '👛' : '💵') + '</span><span class="t"><b>' + (c.Kind === 'opening' ? 'தொடக்க கையிருப்பு' : c.Kind === 'other' ? 'மற்ற வரவு' : esc(son()) + ' கொடுத்தது') + '</b><span>' + dLabel(c.Date) + (c.Note ? ' · ' + esc(c.Note) : '') + '</span></span><span class="a num" style="color:var(--pri)">+' + inr(c.Amount) + '</span></button>'; }).join('') : '<div class="empty">இந்த மாதம் பதிவு இல்லை</div>') +
+    '<div class="hint good" style="margin-top:10px">இப்போது கையிருப்பு: <span class="num">' + inr(inHand()) + '</span></div></div>';
+  h += '<button class="btn pri" data-act="share" style="margin-bottom:12px">📤 ' + esc(son()) + 'க்கு WhatsApp-ல் அனுப்பு</button>';
+  return h;
+}
+
+function drawChart() {
+  var el = $('chart'); if (!el) return;
+  var ms = []; for (var i = -5; i <= 0; i++) ms.push(addM(M, i));
+  var vals = ms.map(realCost), b = budget(), W = Math.max(280, el.clientWidth), H = 190, pad = { l: 8, r: 8, t: 24, b: 26 }, ih = H - pad.t - pad.b;
+  var max = Math.max(b, Math.max.apply(null, vals), 1) * 1.1, bw = (W - pad.l - pad.r) / ms.length, bar = Math.min(34, bw * .55), svg = '';
+  ms.forEach(function (m, i) {
+    var h = vals[i] / max * ih, x = pad.l + bw * i + (bw - bar) / 2, y = pad.t + ih - h, r = Math.min(5, bar / 2, h), on = m === M;
+    if (h > 0) svg += '<path d="M' + x + ',' + (y + h) + 'V' + (y + r) + 'Q' + x + ',' + y + ' ' + (x + r) + ',' + y + 'H' + (x + bar - r) + 'Q' + (x + bar) + ',' + y + ' ' + (x + bar) + ',' + (y + r) + 'V' + (y + h) + 'Z" fill="' + (vals[i] > b ? 'var(--crit)' : 'var(--bar)') + '" opacity="' + (on ? 1 : .55) + '"/>';
+    if (on) svg += '<text x="' + (x + bar / 2) + '" y="' + (y - 6) + '" text-anchor="middle" style="font-weight:700;fill:var(--text)">' + inr(vals[i]) + '</text>';
+    svg += '<text x="' + (x + bar / 2) + '" y="' + (H - 8) + '" text-anchor="middle" style="' + (on ? 'font-weight:700;fill:var(--text)' : '') + '">' + MS[+m.slice(5) - 1] + '</text>';
+    svg += '<rect x="' + (pad.l + bw * i) + '" y="0" width="' + bw + '" height="' + H + '" fill="transparent" data-m2="' + m + '"/>';
+  });
+  var by = pad.t + ih - b / max * ih;
+  svg += '<line x1="' + pad.l + '" x2="' + (W - pad.r) + '" y1="' + by + '" y2="' + by + '" stroke="var(--text2)" stroke-dasharray="5 4"/><line x1="' + pad.l + '" x2="' + (W - pad.r) + '" y1="' + (pad.t + ih) + '" y2="' + (pad.t + ih) + '" stroke="var(--line)"/>';
+  el.innerHTML = '<svg viewBox="0 0 ' + W + ' ' + H + '" role="img" aria-label="6 மாத செலவு">' + svg + '</svg>';
+}
+
+/* ================== sheets (full-screen panels, Android back closes) ================== */
+var SHEETS = [], REPLACING = false;
+function swapTo(fn) { var old = SHEETS.pop(); if (old) old.remove(); REPLACING = true; try { fn(); } finally { REPLACING = false; } }
+function openSheet(title, body, bar) {
+  var s = document.createElement('div'); s.className = 'sheet';
+  s.innerHTML = '<div class="sh"><button class="x" data-close aria-label="மூடு">✕</button><b>' + title + '</b></div><div class="body">' + body + '</div>' + (bar ? '<div class="savebar">' + bar + '</div>' : '');
+  document.body.appendChild(s); SHEETS.push(s); if (!REPLACING) history.pushState({ sheet: SHEETS.length }, '');
+  s.addEventListener('click', function (e) { if (e.target.closest('[data-close]')) closeSheet(); });
+  return s;
+}
+function closeSheet() { if (SHEETS.length) history.back(); }
+window.addEventListener('popstate', function () { var s = SHEETS.pop(); if (s) s.remove(); });
+
+/* ---------- add / edit purchase ---------- */
+function freq() { var c = {}; D.Purchases.forEach(function (p) { if (p.ItemID) c[p.ItemID] = (c[p.ItemID] || 0) + 1; }); return c; }
+function openBuy(itemId, edit) {
+  if (itemId || edit) return buyForm(itemId, edit);
+  var f = freq(), top = items().filter(function (i) { return f[i.ID]; }).sort(function (a, b) { return f[b.ID] - f[a.ID]; }).slice(0, 8);
+  var tile = function (i) { return '<button class="tile" data-pick="' + i.ID + '"><span class="e">' + i.Icon + '</span>' + esc(i.Name) + '</button>'; };
+  var body = (top.length ? '<div class="gh">அடிக்கடி வாங்குபவை</div><div class="tiles">' + top.map(tile).join('') + '</div>' : '') +
+    CATS.concat(items().map(function (i) { return i.Cat; }).filter(function (c, k, a) { return CATS.indexOf(c) < 0 && a.indexOf(c) === k; })).map(function (c) { var l = items().filter(function (i) { return i.Cat === c; }); return l.length ? '<div class="gh">' + esc(c) + '</div><div class="tiles">' + l.map(tile).join('') + '</div>' : ''; }).join('');
+  var s = openSheet('என்ன வாங்கினீர்கள்?', body);
+  s.addEventListener('click', function (e) { var t = e.target.closest('[data-pick]'); if (t) { var id = t.dataset.pick; swapTo(function () { buyForm(id); }); } });
+}
+function buyForm(itemId, edit) {
+  var p = edit ? Object.assign({}, edit) : null, it = item(p ? p.ItemID : itemId) || item('other');
+  var kind = it ? it.Kind : 'daily';
+  var st = { date: p ? p.Date : today(), months: p ? num(p.Months) : null, paid: p ? (p.PaidBy || 'amma') : 'amma', autoM: true };
+  var hist = it ? priceHist(it.ID).filter(function (x) { return !p || x.ID !== p.ID; }) : [];
+  var shops = []; D.Purchases.slice().sort(function (a, b) { return a.Date < b.Date ? 1 : -1; }).forEach(function (x) { if (x.Shop && shops.indexOf(x.Shop) < 0 && shops.length < 6) shops.push(x.Shop); });
+  var unit = p ? (p.Unit || it.Unit) : it.Unit;
+  var body = '<div class="selhead"><span class="e">' + (it ? it.Icon : '🛍️') + '</span><div><b>' + esc(it ? it.Name : 'மற்றவை') + '</b><span class="note">' + esc(it ? it.Cat : '') + '</span></div>' + (edit ? '' : '<button data-repick>மாற்று</button>') + '</div>' +
+    (it && it.ID === 'other' || (p && p.Name) ? '<label class="f">பொருள் பெயர்</label><input class="in" id="bName" value="' + esc(p ? p.Name : '') + '" placeholder="என்ன பொருள்?">' : '') +
+    (kind === 'stock' ? '<label class="f">அளவு</label><div class="qty"><input class="in" id="bQty" inputmode="decimal" value="' + (p && num(p.Qty) ? fq(p.Qty) : '') + '" placeholder="எ.கா. 5"><select class="in" id="bUnit">' + Object.keys(UNITS).map(function (u) { return '<option value="' + u + '"' + (u === unit ? ' selected' : '') + '>' + UNITS[u] + '</option>'; }).join('') + '</select></div><div class="chips" id="qChips">' + [0.5, 1, 2, 5, 10, 25].map(function (q) { return '<button class="chip" data-q="' + q + '">' + q + '</button>'; }).join('') + '</div>' : '') +
+    '<label class="f">தொகை</label><div class="amt"><span class="rs">₹</span><input class="in big num" id="bAmt" inputmode="decimal" value="' + (p ? num(p.Amount) : '') + '" placeholder="0"></div><div id="bHint"></div>' +
+    (kind !== 'daily' ? '<label class="f">எத்தனை மாதத்திற்கு வரும்?</label><div class="chips" id="mChips"></div><div class="hint" id="mNote"></div>' : '') +
+    '<label class="f">தேதி</label><div class="chips"><button class="chip" data-dt="0">இன்று</button><button class="chip" data-dt="1">நேற்று</button><label class="chip">📅 <span id="dtL">வேறு நாள்</span><input type="date" id="bDate" style="position:absolute;inset:0;opacity:0;width:100%"></label></div>' +
+    '<label class="f">யார் பணம்?</label><div class="seg"><button data-paid="amma">என் கையிருப்பு</button><button data-paid="son">' + esc(son()) + ' கட்டினார்</button></div>' +
+    '<label class="f">கடை (விருப்பம்)</label><input class="in" id="bShop" value="' + esc(p ? p.Shop : '') + '" placeholder="கடை பெயர்">' + (shops.length ? '<div class="chips">' + shops.map(function (x) { return '<button class="chip" data-shop="' + esc(x) + '">' + esc(x) + '</button>'; }).join('') + '</div>' : '') +
+    '<label class="f">குறிப்பு (விருப்பம்)</label><input class="in" id="bNote" value="' + esc(p ? p.Note : '') + '">' +
+    (hist.length ? '<label class="f">விலை வரலாறு</label><div class="card" style="padding:8px 12px">' + histTable(hist.slice(0, 5), it) + '</div>' : '') +
+    (edit ? '<button class="btn del" data-delp>🗑 இந்த பதிவை நீக்கு</button>' : '');
+  var s = openSheet(edit ? 'மாற்று' : 'வாங்கியது சேர்', body, '<button class="btn pri" id="bSave">சேமி ✓</button>');
+  function q(id) { return s.querySelector('#' + id); }
+  function qty() { var e = q('bQty'); return e ? num(e.value) : 0; }
+  function autoMonths() {
+    if (kind === 'bill') return num(it.CycleMonths) || 1;
+    if (kind === 'stock' && num(it.PerMonth) > 0 && qty() > 0) { var qq = conv(qty(), q('bUnit').value, it.Unit); var m = r1(qq / num(it.PerMonth)); return m < 0.5 ? 0 : m; }
+    return 0;
+  }
+  function upd() {
+    var a = evalAmt(q('bAmt').value), am = autoMonths();
+    if (st.autoM && kind !== 'daily') st.months = am;
+    var mc = q('mChips');
+    if (mc) {
+      var opts = [0, 1, 2, 3, 4, 5, 6]; if (am && opts.indexOf(am) < 0) opts.push(am); if (st.months && opts.indexOf(st.months) < 0) opts.push(st.months); opts.sort(function (x, y) { return x - y; });
+      mc.innerHTML = opts.map(function (m) { return '<button class="chip' + (m === st.months ? ' on' : '') + '" data-mo="' + m + '">' + (m === 0 ? 'இந்த மாதம் மட்டும்' : fq(m) + ' மாதம்') + (m === am && am && kind === 'stock' ? ' ✨' : '') + '</button>'; }).join('');
+      q('mNote').innerHTML = st.months > 0 && a > 0 ? 'ஒவ்வொரு மாதமும் <b class="num">' + inr(a / st.months) + '</b> ஆக கணக்கில் வரும்' + (am && kind === 'stock' && st.months === am ? '<br><span class="note">✨ உங்கள் மாத பயன்பாடு ' + fq(it.PerMonth) + ' ' + uL(it.Unit) + ' என்பதைக் கொண்டு கணிக்கப்பட்டது</span>' : '') : 'முழு தொகையும் இந்த மாதத்தில் கணக்கில் வரும்';
+    }
+    var hb = q('bHint'), last = hist[0];
+    if (hb) {
+      var up = qty() > 0 && a > 0 ? a / qty() : null, lu = last ? unitPrice(last) : null, low = hist.map(unitPrice).filter(function (x) { return x; }).sort(function (x, y) { return x - y; })[0];
+      if (up && lu && up > lu * 1.05) hb.innerHTML = '<div class="hint warn">⚠️ கடந்த முறையை விட ' + Math.round((up / lu - 1) * 100) + '% அதிகம் (' + inr(lu) + ' → ' + inr(up) + ' / ' + uL(q('bUnit').value) + ')</div>';
+      else if (up && low && up <= low) hb.innerHTML = '<div class="hint good">👍 இதுவரை குறைந்த விலை (' + inr(up) + ' / ' + uL(q('bUnit').value) + ')</div>';
+      else if (last) hb.innerHTML = '<div class="hint">கடந்த முறை: ' + dLabel(last.Date) + ' · ' + (num(last.Qty) ? fq(last.Qty) + ' ' + uL(last.Unit) + ' · ' : '') + inr(last.Amount) + (last.Shop ? ' · ' + esc(last.Shop) : '') + '</div>';
+      else hb.innerHTML = '';
+    }
+    s.querySelectorAll('[data-dt]').forEach(function (c) { c.classList.toggle('on', (c.dataset.dt === '0' && st.date === today()) || (c.dataset.dt === '1' && st.date === addDays(today(), -1))); });
+    var other = st.date !== today() && st.date !== addDays(today(), -1); q('dtL').textContent = other ? dLabel(st.date) : 'வேறு நாள்'; q('dtL').parentNode.classList.toggle('on', other);
+    s.querySelectorAll('[data-paid]').forEach(function (c) { c.classList.toggle('on', c.dataset.paid === st.paid); });
+    q('bSave').disabled = !(a > 0);
+    q('bSave').textContent = a > 0 ? 'சேமி ' + inr(a) + ' ✓' : 'தொகையை போடவும்';
+  }
+  if (edit && p && num(p.Months) !== autoMonths()) st.autoM = false;
+  s.addEventListener('input', function (e) { if (e.target.id !== 'bDate') upd(); });
+  s.addEventListener('change', function (e) { if (e.target.id === 'bDate' && e.target.value) { st.date = e.target.value; upd(); } if (e.target.id === 'bUnit') upd(); });
+  s.addEventListener('click', function (e) {
+    var t = e.target.closest('[data-q],[data-mo],[data-dt],[data-paid],[data-shop],[data-repick],[data-delp],#bSave'); if (!t) return;
+    if (t.dataset.q) { q('bQty').value = t.dataset.q; }
+    if (t.dataset.mo !== undefined) { st.months = +t.dataset.mo; st.autoM = false; }
+    if (t.dataset.dt) st.date = addDays(today(), -t.dataset.dt);
+    if (t.dataset.paid) st.paid = t.dataset.paid;
+    if (t.dataset.shop) q('bShop').value = t.dataset.shop;
+    if (t.hasAttribute('data-repick')) { swapTo(function () { openBuy(); }); return; }
+    if (t.hasAttribute('data-delp')) { if (confirm('இந்த பதிவை நீக்கவா?')) { history.back(); del('Purchases', p.ID); toast('நீக்கப்பட்டது'); } return; }
+    if (t.id === 'bSave') {
+      var a = evalAmt(q('bAmt').value); if (!(a > 0)) return;
+      var nm = q('bName') ? q('bName').value.trim() : '';
+      var o = { ID: p ? p.ID : undefined, Date: st.date, ItemID: it ? it.ID : 'other', Name: nm, Cat: it ? it.Cat : 'மற்றவை', Qty: q('bQty') ? qty() || '' : '', Unit: q('bUnit') ? q('bUnit').value : '', Amount: a, Months: kind === 'daily' ? 0 : st.months || 0, Shop: q('bShop').value.trim(), PaidBy: st.paid, Note: q('bNote').value.trim(), CreatedAt: p ? p.CreatedAt : undefined };
+      history.back(); save('Purchases', o); toast('சேமிக்கப்பட்டது ✓ ' + inr(a));
+      return;
+    }
+    upd();
+  });
+  upd();
+  if (!edit) setTimeout(function () { (q('bQty') || q('bName') || q('bAmt')).focus(); }, 250);
+}
+function histTable(list, it) {
+  var ups = list.map(unitPrice).filter(function (x) { return x; }), low = ups.length ? Math.min.apply(null, ups) : null;
+  return '<table class="ph"><tr><th>தேதி</th><th>அளவு</th><th class="r">விலை</th>' + (low ? '<th class="r">ஒரு ' + uL(it.Unit) + '</th>' : '') + '<th>கடை</th></tr>' + list.map(function (p) { var u = unitPrice(p); return '<tr class="' + (u && low && u === low && ups.length > 1 ? 'low' : '') + '"><td>' + dLabel(p.Date) + '</td><td>' + (num(p.Qty) ? fq(p.Qty) + ' ' + uL(p.Unit) : '—') + '</td><td class="r num">' + inr(p.Amount) + '</td>' + (low ? '<td class="r num">' + (u ? inr(u) : '—') + '</td>' : '') + '<td>' + esc(p.Shop || '') + '</td></tr>'; }).join('') + '</table>' + (low && ups.length > 1 ? '<div class="note" style="margin-top:6px">பச்சை = குறைந்த விலை</div>' : '');
+}
+
+/* ---------- stock item panel ---------- */
+function openItem(id) {
+  var it = item(id); if (!it) return;
+  if (it.Kind !== 'stock') return openBuy(id);
+  var s0 = stock(it), hist = priceHist(id);
+  var body = '<div class="selhead"><span class="e">' + it.Icon + '</span><div><b>' + esc(it.Name) + '</b><span class="note">' + (s0 ? fq(r1(s0.left)) + ' ' + uL(it.Unit) + ' மீதம் · ' + stockText(s0) : 'இன்னும் பதிவு இல்லை') + '</span></div></div>' +
+    '<button class="btn pri" data-buy="' + id + '" style="margin-top:12px">+ ' + esc(it.Name) + ' வாங்கியது</button>' +
+    '<label class="f">இப்போது வீட்டில் எவ்வளவு இருக்கிறது?</label><div class="bigbtns">' +
+    [['0', 'தீர்ந்துவிட்டது', '0'], ['.25', 'கொஞ்சம்', '¼'], ['.5', 'பாதி', '½'], ['.75', 'நிறைய', '¾']].map(function (x) { var base = s0 && s0.lastBuy ? s0.lastBuy : num(it.PerMonth); return '<button data-left="' + fq(base * +x[0]) + '"><b>' + x[1] + '</b><span class="note">' + (x[0] === '0' ? '0' : fq(r1(base * +x[0])) + ' ' + uL(it.Unit)) + '</span></button>'; }).join('') +
+    '</div><div class="qty" style="margin-top:8px"><input class="in" id="iLeft" inputmode="decimal" placeholder="அல்லது அளவை போடவும்"><button class="btn" data-leftin>சரி</button></div>' +
+    '<label class="f">மாதம் எவ்வளவு பயன்படுத்துகிறோம்?</label><div class="qty"><input class="in" id="iPer" inputmode="decimal" value="' + fq(num(it.PerMonth)) + '"><button class="btn" data-per>' + uL(it.Unit) + ' ✓</button></div><div class="note" style="margin-top:6px">இருப்பை சரிசெய்யும் போது ஆப் இதை தானாக மேம்படுத்தும்.</div>' +
+    (hist.length ? '<label class="f">விலை வரலாறு</label><div class="card" style="padding:8px 12px">' + histTable(hist.slice(0, 10), it) + '</div>' : '');
+  var s = openSheet(esc(it.Name), body);
+  s.addEventListener('click', function (e) {
+    var t = e.target.closest('[data-left],[data-leftin],[data-per],[data-buy]'); if (!t) return;
+    if (t.dataset.buy) { swapTo(function () { openBuy(t.dataset.buy); }); return; }
+    if (t.hasAttribute('data-per')) { var v = num(s.querySelector('#iPer').value); if (v > 0) { save('Items', Object.assign({}, it, { PerMonth: v })); toast('சேமிக்கப்பட்டது ✓'); history.back(); } return; }
+    var left = t.hasAttribute('data-leftin') ? s.querySelector('#iLeft').value : t.dataset.left;
+    if (left === '' || isNaN(+left)) return;
+    setLeft(it, +left); history.back();
+  });
+}
+// record "how much is left" and learn the monthly usage
+function setLeft(it, left) {
+  var t = today(), prev = D.Checks.filter(function (c) { return c.ItemID === it.ID; }).sort(function (a, b) { return a.Date < b.Date ? 1 : -1; })[0];
+  var buys = D.Purchases.filter(function (p) { return p.ItemID === it.ID && num(p.Qty) > 0; }).sort(function (a, b) { return a.Date < b.Date ? -1 : 1; });
+  var fromD, fromQ;
+  if (prev) { fromD = prev.Date; fromQ = num(prev.Left); } else if (buys.length) { fromD = buys[0].Date; fromQ = 0; }
+  var msg = 'சேமிக்கப்பட்டது ✓';
+  if (fromD) {
+    var added = sum(buys.filter(function (p) { return prev ? p.Date >= fromD && String(p.CreatedAt) > String(prev.CreatedAt) || p.Date > fromD : true; }), function (p) { return conv(num(p.Qty), p.Unit, it.Unit); });
+    var used = fromQ + added - left, months = daysBetween(fromD, t) / 30.4375;
+    if (months >= 0.4 && used > 0) {
+      var learned = used / months, nv = num(it.PerMonth) > 0 ? r1((num(it.PerMonth) + learned) / 2 * 10) / 10 : r1(learned);
+      nv = Math.round(nv * 100) / 100;
+      if (Math.abs(nv - num(it.PerMonth)) >= 0.05) { save('Items', Object.assign({}, it, { PerMonth: nv })); msg = '✨ மாத பயன்பாடு ' + fq(nv) + ' ' + uL(it.Unit) + ' ஆக மாற்றப்பட்டது'; }
+    }
+  }
+  save('Checks', { Date: t, ItemID: it.ID, Left: left });
+  toast(msg);
+}
+
+/* ---------- cash, budget, settings, share ---------- */
+function openCash(c) {
+  var st = { kind: c ? c.Kind || 'given' : 'given', date: c ? c.Date : today() };
+  var body = '<label class="f">தொகை</label><div class="amt"><span class="rs">₹</span><input class="in big num" id="cAmt" inputmode="decimal" value="' + (c ? num(c.Amount) : '') + '" placeholder="0"></div>' +
+    '<label class="f">எங்கிருந்து?</label><div class="seg"><button data-k="given">' + esc(son()) + ' கொடுத்தது</button><button data-k="other">மற்ற வரவு</button><button data-k="opening">தொடக்க கையிருப்பு</button></div>' +
+    '<label class="f">தேதி</label><input class="in" type="date" id="cDate" value="' + st.date + '">' +
+    '<label class="f">குறிப்பு (விருப்பம்)</label><input class="in" id="cNote" value="' + esc(c ? c.Note : '') + '">' + (c ? '<button class="btn del" data-delc>🗑 நீக்கு</button>' : '');
+  var s = openSheet(c ? 'பணம் — மாற்று' : 'பணம் பெற்றேன்', body, '<button class="btn pri" id="cSave">சேமி ✓</button>');
+  function upd() { s.querySelectorAll('[data-k]').forEach(function (b) { b.classList.toggle('on', b.dataset.k === st.kind); }); }
+  s.addEventListener('click', function (e) {
+    var t = e.target.closest('[data-k],[data-delc],#cSave'); if (!t) return;
+    if (t.dataset.k) { st.kind = t.dataset.k; upd(); }
+    if (t.hasAttribute('data-delc')) { if (confirm('நீக்கவா?')) { history.back(); del('Cash', c.ID); } }
+    if (t.id === 'cSave') { var a = evalAmt(s.querySelector('#cAmt').value); if (!(a > 0)) { toast('தொகையை போடவும்'); return; } history.back(); save('Cash', { ID: c ? c.ID : undefined, Date: s.querySelector('#cDate').value || today(), Amount: a, Kind: st.kind, Note: s.querySelector('#cNote').value.trim(), CreatedAt: c ? c.CreatedAt : undefined }); toast('சேமிக்கப்பட்டது ✓ +' + inr(a)); }
+  });
+  upd(); setTimeout(function () { s.querySelector('#cAmt').focus(); }, 250);
+}
+function openBudget() {
+  var s = openSheet('மாத பட்ஜெட்', '<label class="f">ஒரு மாதத்திற்கு எவ்வளவு?</label><div class="amt"><span class="rs">₹</span><input class="in big num" id="gB" inputmode="decimal" value="' + budget() + '"></div>', '<button class="btn pri" id="gSave">சேமி ✓</button>');
+  s.querySelector('#gSave').onclick = function () { var v = evalAmt(s.querySelector('#gB').value); if (v > 0) { history.back(); save('Settings', { Key: 'Budget', Value: v }); toast('பட்ஜெட் ' + inr(v)); } };
+}
+function openSettings() {
+  var body = '<div class="card"><h2>எழுத்து அளவு</h2><div class="seg">' + ['அ', 'அ+', 'அ++'].map(function (x, i) { return '<button data-fs="' + i + '" class="' + (fs === i ? 'on' : '') + '" style="font-size:' + (1 + i * .15) + 'rem">' + x + '</button>'; }).join('') + '</div></div>' +
+    '<div class="card"><button class="li" data-set="budget"><span class="ic">🎯</span><span class="t"><b>மாத பட்ஜெட்</b><span>' + inr(budget()) + '</span></span>›</button>' +
+    '<button class="li" data-set="items"><span class="ic">🧺</span><span class="t"><b>பொருட்கள்</b><span>சேர், மாற்று, மறை</span></span>›</button>' +
+    '<button class="li" data-set="son"><span class="ic">👤</span><span class="t"><b>மகன் பெயர்</b><span>' + esc(son()) + '</span></span>›</button>' +
+    '<button class="li" data-set="refresh"><span class="ic">🔄</span><span class="t"><b>புதுப்பி</b><span>Google Sheet-லிருந்து மீண்டும் எடு</span></span>›</button>' +
+    (D.spreadsheetUrl ? '<a class="li" href="' + esc(D.spreadsheetUrl) + '" target="_blank" style="color:inherit;text-decoration:none"><span class="ic">📄</span><span class="t"><b>Google Sheet திற</b><span>எல்லா தரவும் இங்கே</span></span>›</a>' : '') +
+    '<button class="li" data-set="logout"><span class="ic">🚪</span><span class="t"><b style="color:var(--crit)">இந்த போனில் வெளியேறு</b><span>மீண்டும் திறக்க PIN தேவை</span></span></button></div>' +
+    '<div class="note" style="text-align:center">அம்மா பட்ஜெட் · தரவு உங்கள் Google Drive-ல் மட்டும்</div>';
+  var s = openSheet('அமைப்புகள்', body);
+  s.addEventListener('click', function (e) {
+    var t = e.target.closest('[data-fs],[data-set]'); if (!t) return;
+    if (t.dataset.fs !== undefined) { fs = +t.dataset.fs; ls('ab_fs', fs || null); document.documentElement.className = fs ? 'fs' + fs : ''; s.querySelectorAll('[data-fs]').forEach(function (b) { b.classList.toggle('on', +b.dataset.fs === fs); }); render(); return; }
+    var k = t.dataset.set;
+    if (k === 'refresh' || k === 'logout') history.back();
+    (k === 'refresh' || k === 'logout' ? function (f) { setTimeout(f, 60); } : swapTo)(function () {
+      if (k === 'budget') openBudget();
+      else if (k === 'items') openItems();
+      else if (k === 'refresh') load('toast');
+      else if (k === 'son') { var s2 = openSheet('மகன் பெயர்', '<input class="in" id="sn" value="' + esc(son()) + '">', '<button class="btn pri" id="snS">சேமி ✓</button>'); s2.querySelector('#snS').onclick = function () { var v = s2.querySelector('#sn').value.trim(); if (v) { history.back(); save('Settings', { Key: 'SonName', Value: v }); } }; }
+      else if (k === 'logout') { if (confirm('இந்த போனில் வெளியேறவா?')) { post({ action: 'logout', token: TOK }).catch(function () {}); TOK = null; ls('ab_tok', null); showLogin(); } }
+    });
+  });
+}
+function openItems() {
+  var body = '<button class="btn pri" data-newi>+ புதிய பொருள்</button>' + CATS.map(function (c) { var l = items(true).filter(function (i) { return i.Cat === c; }); return l.length ? '<div class="gh">' + esc(c) + '</div><div class="card" style="padding:4px 12px">' + l.map(function (i) { return '<button class="li" data-ei="' + i.ID + '" style="' + (i.Active ? '' : 'opacity:.5') + '"><span class="ic">' + i.Icon + '</span><span class="t"><b>' + esc(i.Name) + '</b><span>' + (i.Kind === 'stock' ? 'இருப்பு பொருள் · மாதம் ' + fq(num(i.PerMonth)) + ' ' + uL(i.Unit) : i.Kind === 'bill' ? 'கட்டணம் · ' + fq(num(i.CycleMonths)) + ' மாதத்திற்கு ஒருமுறை' : 'தினசரி') + (i.Active ? '' : ' · மறைக்கப்பட்டது') + '</span></span>›</button>'; }).join('') + '</div>' : ''; }).join('');
+  var s = openSheet('பொருட்கள்', body);
+  s.addEventListener('click', function (e) { var t = e.target.closest('[data-ei],[data-newi]'); if (!t) return; var id = t.dataset.ei; swapTo(function () { itemForm(id ? item(id) : null); }); });
+}
+function itemForm(it) {
+  var st = { kind: it ? it.Kind : 'stock' };
+  var body = '<label class="f">பெயர்</label><input class="in" id="fN" value="' + esc(it ? it.Name : '') + '">' +
+    '<label class="f">படம் (emoji)</label><input class="in" id="fI" value="' + esc(it ? it.Icon : '🛒') + '" style="font-size:1.6rem;width:90px">' +
+    '<label class="f">வகை</label><select class="in" id="fC">' + CATS.map(function (c) { return '<option' + (it && it.Cat === c ? ' selected' : '') + '>' + esc(c) + '</option>'; }).join('') + '</select>' +
+    '<label class="f">எப்படி வாங்குகிறோம்?</label><div class="seg"><button data-kd="stock">மொத்தமாக (இருப்பு)</button><button data-kd="daily">தினசரி</button><button data-kd="bill">கட்டணம்</button></div>' +
+    '<div id="kStock"><label class="f">அலகு</label><select class="in" id="fU">' + Object.keys(UNITS).map(function (u) { return '<option value="' + u + '"' + (it && it.Unit === u ? ' selected' : '') + '>' + UNITS[u] + '</option>'; }).join('') + '</select><label class="f">மாதம் எவ்வளவு பயன்படுகிறது?</label><input class="in" id="fP" inputmode="decimal" value="' + (it && num(it.PerMonth) ? fq(it.PerMonth) : '') + '"></div>' +
+    '<div id="kBill"><label class="f">எத்தனை மாதத்திற்கு ஒருமுறை?</label><input class="in" id="fM" inputmode="decimal" value="' + (it && num(it.CycleMonths) ? fq(it.CycleMonths) : '1') + '"></div>' +
+    (it ? '<label class="f" style="display:flex;align-items:center;gap:10px"><input type="checkbox" id="fA" ' + (it.Active ? 'checked' : '') + ' style="width:22px;height:22px">பட்டியலில் காட்டு</label>' : '');
+  var s = openSheet(it ? 'பொருள் மாற்று' : 'புதிய பொருள்', body, '<button class="btn pri" id="fS">சேமி ✓</button>');
+  function upd() { s.querySelectorAll('[data-kd]').forEach(function (b) { b.classList.toggle('on', b.dataset.kd === st.kind); }); s.querySelector('#kStock').style.display = st.kind === 'stock' ? '' : 'none'; s.querySelector('#kBill').style.display = st.kind === 'bill' ? '' : 'none'; }
+  s.addEventListener('click', function (e) {
+    var t = e.target.closest('[data-kd],#fS'); if (!t) return;
+    if (t.dataset.kd) { st.kind = t.dataset.kd; upd(); return; }
+    var n = s.querySelector('#fN').value.trim(); if (!n) { toast('பெயர் போடவும்'); return; }
+    history.back();
+    save('Items', { ID: it ? it.ID : undefined, Name: n, Icon: s.querySelector('#fI').value.trim() || '🛒', Cat: s.querySelector('#fC').value, Kind: st.kind, Unit: st.kind === 'stock' ? s.querySelector('#fU').value : '', PerMonth: st.kind === 'stock' ? num(s.querySelector('#fP').value) : '', CycleMonths: st.kind === 'bill' ? num(s.querySelector('#fM').value) || 1 : '', Active: it ? s.querySelector('#fA').checked : true, Order: it ? it.Order : 100 + D.Items.length });
+    toast('சேமிக்கப்பட்டது ✓');
+  });
+  upd();
+}
+function shareText() {
+  var m = ym(new Date()), al = alerts(), c = realCost(m), b = budget();
+  var t = '*அம்மா பட்ஜெட் — ' + mLabel(m) + '*\n\nஇந்த மாத செலவு: ' + inr(c) + ' (பட்ஜெட் ' + inr(b) + ')\n' + (c > b ? '⚠️ ' + inr(c - b) + ' அதிகம்\n' : '✅ ' + inr(b - c) + ' மீதம்\n') +
+    'வாங்கியது: ' + inr(paidIn(m)) + '\nபெற்ற பணம்: ' + inr(receivedIn(m)) + '\nகையிருப்பு: ' + inr(inHand()) + '\n';
+  if (al.low.length) t += '\n📦 தீரப்போகிறது: ' + al.low.map(function (x) { return x.it.Name + ' (' + stockText(x.s) + ')'; }).join(', ') + '\n';
+  if (al.due.length) t += '\n🧾 கட்ட வேண்டியது: ' + al.due.map(function (x) { return x.it.Name + ' — ' + dLabel(x.b.due) + ' (~' + inr(x.b.last.Amount) + ')'; }).join(', ') + '\n';
+  return t;
+}
+function share() {
+  var t = shareText();
+  if (navigator.share) navigator.share({ text: t }).catch(function () {});
+  else window.open('https://wa.me/?text=' + encodeURIComponent(t), '_blank');
+}
+
+/* ================== events ================== */
+document.addEventListener('click', function (e) {
+  if (e.target.closest('.sheet')) return;
+  var t = e.target.closest('[data-tab],[data-m],[data-m2],[data-editp],[data-editc],[data-item],[data-buy],[data-act],#fab,#gear,#install'); if (!t) return;
+  if (t.dataset.tab) { TAB = t.dataset.tab; render(); }
+  else if (t.dataset.m) { M = addM(M, +t.dataset.m); render(); }
+  else if (t.dataset.m2) { M = t.dataset.m2; render(); }
+  else if (t.dataset.editp) openBuy(null, D.Purchases.find(function (p) { return p.ID === t.dataset.editp; }));
+  else if (t.dataset.editc) openCash(D.Cash.find(function (c) { return c.ID === t.dataset.editc; }));
+  else if (t.dataset.item) openItem(t.dataset.item);
+  else if (t.dataset.buy) openBuy(t.dataset.buy);
+  else if (t.dataset.act === 'cash') openCash();
+  else if (t.dataset.act === 'budget') openBudget();
+  else if (t.dataset.act === 'share') share();
+  else if (t.id === 'fab') openBuy();
+  else if (t.id === 'gear') openSettings();
+  else if (t.id === 'install' && window.__bip) { window.__bip.prompt(); window.__bip = null; t.style.display = 'none'; }
+});
+window.addEventListener('beforeinstallprompt', function (e) { e.preventDefault(); window.__bip = e; var b = $('install'); if (b) b.style.display = 'block'; });
+var rt; window.addEventListener('resize', function () { clearTimeout(rt); rt = setTimeout(function () { if (TAB === 'money') drawChart(); }, 200); });
+document.addEventListener('visibilitychange', function () { if (!document.hidden && TOK) { flush(); load(); } });
+if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js').catch(function () {});
+syncPill();
+load();
+</script>
+<script>
+/* ===================== Amma Budget v2: compact home, voice entry, money ledger, repeat & basket ===================== */
+(function () {
+  /* ---------- compact home ---------- */
+  var SHOW_ALL_ALERTS = false;
+  function lastBuy(id) { return D.Purchases.filter(function (p) { return p.ItemID === id && num(p.Amount) > 0; }).sort(function (a, b) { return a.Date < b.Date ? 1 : a.Date > b.Date ? -1 : String(b.CreatedAt).localeCompare(String(a.CreatedAt)); })[0]; }
+  function spentCash(m) { return sum(D.Purchases.filter(function (p) { return p.Month === m && p.PaidBy !== 'son'; }), function (p) { return num(p.Amount); }); }
+  window.vHome = function () {
+    var cm = ym(new Date()), hand = inHand(), cost = realCost(cm), b = budget(), al = alerts(), left = b - cost;
+    var h = '<div class="card hero v2">' +
+      '<div class="k">கையிருப்பு பணம்</div><div class="big num">' + inr(hand) + '</div>' +
+      '<div class="hmini"><div><span>' + MS[+cm.slice(5) - 1] + ' பெற்றது</span><b class="num">' + inr(receivedIn(cm)) + '</b></div>' +
+      '<div><span>கையிலிருந்து செலவு</span><b class="num">' + inr(spentCash(cm)) + '</b></div>' +
+      '<div data-act="budget"><span>பட்ஜெட் ' + (left < 0 ? 'மீறியது' : 'மீதம்') + '</span><b class="num" style="' + (left < 0 ? 'color:#ffd2d2' : '') + '">' + inr(Math.abs(left)) + '</b></div></div>' +
+      '<div class="meter light"><i class="' + (cost > b ? 'over' : '') + '" style="width:' + Math.min(100, b ? cost / b * 100 : 0) + '%"></i></div>' +
+      '<div class="row"><button data-act="cash">💵 பணம் பெற்றேன்</button><button data-act="share">📤 ' + esc(son()) + 'க்கு அனுப்பு</button></div></div>';
+
+    // quick buy: the items she buys most, with the last price – one tap to add
+    var f = freq(), top = items().filter(function (i) { return f[i.ID]; }).sort(function (a, b) { return f[b.ID] - f[a.ID]; }).slice(0, 8);
+    if (top.length < 8) items().filter(function (i) { return !f[i.ID] && i.ID !== 'other'; }).slice(0, 8 - top.length).forEach(function (i) { top.push(i); });
+    h += '<div class="card"><h2>⚡ விரைவாக சேர்க்க<button class="r" data-act="voice">🎤 பேசி சேர்</button></h2><div class="qgrid">' + top.map(function (i) {
+      var l = lastBuy(i.ID);
+      return '<button class="qt" data-buy="' + i.ID + '"><span class="e">' + i.Icon + '</span><span class="n">' + esc(i.Name) + '</span><span class="p num">' + (l ? inr(l.Amount) : '+') + '</span></button>';
+    }).join('') + '</div></div>';
+
+    // alerts: compact, first three
+    var list = al.low.map(function (x) { return '<button class="al ' + x.s.level + '" data-item="' + x.it.ID + '"><span class="ic">' + x.it.Icon + '</span><span class="t"><b>' + esc(x.it.Name) + '</b><span>' + stockText(x.s) + '</span></span><span>›</span></button>'; })
+      .concat(al.due.map(function (x) { return '<button class="al ' + (x.b.days <= 3 ? 'crit' : 'warn') + '" data-buy="' + x.it.ID + '"><span class="ic">' + x.it.Icon + '</span><span class="t"><b>' + esc(x.it.Name) + '</b><span>' + (x.b.days < 0 ? -x.b.days + ' நாள் தாமதம்' : 'கட்ட ' + daysText(x.b.days)) + '</span></span><span class="num" style="font-weight:700">' + inr(x.b.last.Amount) + '</span></button>'; }));
+    if (list.length) h += '<div class="card"><h2>⚠️ கவனிக்க (' + list.length + ')' + (list.length > 3 ? '<button class="r" data-act="morealerts">' + (SHOW_ALL_ALERTS ? 'குறைவாக' : 'அனைத்தும்') + '</button>' : '') + '</h2>' + (SHOW_ALL_ALERTS ? list : list.slice(0, 3)).join('') + '</div>';
+
+    var rec = D.Purchases.slice().sort(function (a, b) { return a.Date < b.Date ? 1 : a.Date > b.Date ? -1 : String(b.CreatedAt).localeCompare(String(a.CreatedAt)); }).slice(0, 4);
+    h += '<div class="card"><h2>சமீபத்தில்<button class="r" data-tab="buys">அனைத்தும் ›</button></h2>' + (rec.length ? rec.map(pRow).join('') : '<div class="empty">இன்னும் எதுவும் இல்லை. <b>🎤</b> அல்லது <b>+ வாங்கியது</b> அழுத்தவும்.</div>') + '</div>';
+    h += '<button class="card" id="install" style="width:100%;border:0;text-align:left;font-weight:700;color:var(--pri);display:' + (window.__bip ? 'block' : 'none') + '">📲 இதை போனில் ஆப்பாக நிறுவு</button>';
+    return h;
+  };
+
+  /* ---------- money ledger: how much was given, how much was spent, what is left ---------- */
+  var _vMoney = window.vMoney;
+  window.vMoney = function () {
+    var m = M, start = m + '-01', end = monthEnd(m);
+    var open = sum(D.Cash.filter(function (c) { return c.Date < start; }), function (c) { return num(c.Amount); }) -
+      sum(D.Purchases.filter(function (p) { return p.Date < start && p.PaidBy !== 'son'; }), function (p) { return num(p.Amount); });
+    var ev = [];
+    D.Cash.filter(function (c) { return c.Date >= start && c.Date <= end; }).forEach(function (c) { ev.push({ d: c.Date, amt: num(c.Amount), t: c.Kind === 'opening' ? 'தொடக்க கையிருப்பு' : 'பெற்றது' + (c.Note ? ' · ' + c.Note : '') }); });
+    var byDay = {};
+    D.Purchases.filter(function (p) { return p.Date >= start && p.Date <= end && p.PaidBy !== 'son'; }).forEach(function (p) { var x = byDay[p.Date] = byDay[p.Date] || { amt: 0, names: [] }; x.amt += num(p.Amount); x.names.push(pName(p)); });
+    Object.keys(byDay).forEach(function (d) { var x = byDay[d]; ev.push({ d: d, amt: -x.amt, t: x.names.slice(0, 3).join(', ') + (x.names.length > 3 ? ' +' + (x.names.length - 3) : '') }); });
+    ev.sort(function (a, b) { return a.d < b.d ? -1 : a.d > b.d ? 1 : b.amt - a.amt; });
+    var bal = open, given = sum(ev.filter(function (e) { return e.amt > 0; }), function (e) { return e.amt; }), spent = -sum(ev.filter(function (e) { return e.amt < 0; }), function (e) { return e.amt; });
+    var sonPaid = sum(D.Purchases.filter(function (p) { return p.Month === m && p.PaidBy === 'son'; }), function (p) { return num(p.Amount); });
+    var h = '<div class="card"><h2>💵 பண கணக்கு · ' + mLabel(m) + '</h2>' +
+      '<div class="ledsum"><div><span>மாத தொடக்கம்</span><b class="num">' + inr(open) + '</b></div><div class="plus"><span>பெற்றது</span><b class="num">+' + inr(given) + '</b></div><div class="minus"><span>செலவு</span><b class="num">−' + inr(spent) + '</b></div><div class="tot"><span>மீதம்</span><b class="num">' + inr(open + given - spent) + '</b></div></div>';
+    h += ev.length ? '<table class="led"><tr><th>தேதி</th><th>விவரம்</th><th class="r">தொகை</th><th class="r">இருப்பு</th></tr>' + ev.map(function (e) {
+      bal += e.amt;
+      return '<tr><td>' + dLabel(e.d) + '</td><td>' + esc(e.t) + '</td><td class="r num ' + (e.amt > 0 ? 'plus' : 'minus') + '">' + (e.amt > 0 ? '+' : '−') + inr(Math.abs(e.amt)) + '</td><td class="r num">' + inr(bal) + '</td></tr>';
+    }).join('') + '</table>' : '<div class="empty">இந்த மாதம் பதிவு இல்லை.</div>';
+    if (sonPaid) h += '<div class="note" style="margin-top:8px">' + esc(son()) + ' நேரடியாக கட்டியது (கையிருப்பில் இல்லை): <b>' + inr(sonPaid) + '</b></div>';
+    return h + '</div>' + _vMoney();
+  };
+
+  /* ---------- voice entry (Tamil): "தக்காளி 60 ரூபாய், எண்ணெய் 5 லிட்டர் 900" ---------- */
+  var ALIAS = {
+    veg: ['காய்கறி', 'காய்', 'தக்காளி', 'வெங்காயம்', 'உருளை', 'கத்தரி', 'வெண்டை', 'பீன்ஸ்', 'கேரட்', 'முட்டைகோஸ்', 'கோஸ்', 'காலிஃப்ளவர்', 'மிளகாய்', 'இஞ்சி', 'பூண்டு', 'கீரை', 'முருங்கை', 'பாகற்காய்', 'சுரைக்காய்', 'பூசணி', 'எலுமிச்சை', 'கொத்தமல்லி', 'புதினா', 'vegetable', 'tomato', 'onion', 'potato'],
+    fruit: ['பழம்', 'பழங்கள்', 'வாழை', 'ஆப்பிள்', 'ஆரஞ்சு', 'மாம்பழம்', 'திராட்சை', 'கொய்யா', 'பப்பாளி', 'fruit', 'banana', 'apple'],
+    milk: ['பால்', 'தயிர்', 'மோர்', 'milk', 'curd'], egg: ['முட்டை', 'egg'],
+    meat: ['மீன்', 'கோழி', 'சிக்கன்', 'மட்டன்', 'இறைச்சி', 'கறி', 'இறால்', 'chicken', 'fish', 'mutton'],
+    goil: ['நல்லெண்ணெய்', 'நல்லெண்ணை'], oil: ['எண்ணெய்', 'எண்ணை', 'ஆயில்', 'oil'],
+    rice: ['அரிசி', 'rice'], atta: ['கோதுமை', 'மாவு', 'ஆட்டா', 'atta'], toor: ['துவரம்', 'பருப்பு', 'dal'], urad: ['உளுந்து', 'உளுத்தம்'],
+    sugar: ['சர்க்கரை', 'சீனி', 'sugar'], tea: ['டீ', 'டீத்தூள்', 'tea'], coffee: ['காபி', 'காப்பி', 'coffee'], salt: ['உப்பு', 'salt'], rava: ['ரவை', 'rava'],
+    masala: ['மசாலா', 'மிளகு', 'சீரகம்', 'கடுகு', 'மஞ்சள்', 'வெந்தயம்'], med: ['மருந்து', 'மாத்திரை', 'டானிக்', 'medicine', 'tablet'],
+    soap: ['சோப்பு', 'சோப்', 'soap'], det: ['சலவை', 'சர்ஃப்', 'டிடர்ஜென்ட்', 'washing'], house: ['வீட்டு', 'துடைப்பம்', 'பிரஷ்'],
+    bb: ['பிராட்பேண்ட்', 'இன்டர்நெட்', 'வைஃபை', 'wifi', 'broadband'], gas: ['கேஸ்', 'சிலிண்டர்', 'gas'], eb: ['கரண்ட்', 'மின்', 'eb', 'current'],
+    dth: ['கேபிள்', 'டிஷ்', 'dth', 'cable'], mobile: ['ரீசார்ஜ்', 'recharge'], water: ['தண்ணீர்', 'கேன்', 'water'], pooja: ['பூஜை', 'பூ', 'கற்பூரம்', 'ஊதுபத்தி', 'சாம்பிராணி']
+  };
+  var NUMW = { 'ஒன்று': 1, 'ஒரு': 1, 'ஒண்ணு': 1, 'இரண்டு': 2, 'ரெண்டு': 2, 'மூன்று': 3, 'மூணு': 3, 'நான்கு': 4, 'நாலு': 4, 'ஐந்து': 5, 'அஞ்சு': 5, 'ஆறு': 6, 'ஏழு': 7, 'எட்டு': 8, 'ஒன்பது': 9, 'பத்து': 10, 'இருபது': 20, 'முப்பது': 30, 'நாற்பது': 40, 'ஐம்பது': 50, 'அம்பது': 50, 'அறுபது': 60, 'எழுபது': 70, 'எண்பது': 80, 'தொண்ணூறு': 90, 'நூறு': 100, 'இருநூறு': 200, 'முந்நூறு': 300, 'ஐநூறு': 500, 'ஆயிரம்': 1000, 'அரை': 0.5, 'கால்': 0.25 };
+  var UNITW = [[/^(கிலோ|kg|kilo)/i, 'kg'], [/^(லிட்டர்|லிட்|litre|liter|ltr|l$)/i, 'L'], [/^(கிராம்|gram|gm|g$)/i, 'g'], [/^(மில்லி|ml)/i, 'ml'], [/^(பாக்கெட்|packet|pkt|பீஸ்|pcs|டஜன்)/i, 'pcs']];
+  var RS = /^(ரூபாய்|ரூபா|ரூ|rs|rupees?|₹)/i, SPLIT = /^(மற்றும்|அப்புறம்|அப்றம்|and|பிறகு)$/i;
+  function itemFor(tok) {
+    var t = tok.toLowerCase(), best = null, bl = 0;
+    items(true).forEach(function (i) { var n = String(i.Name).toLowerCase(); if (n.length > bl && t.indexOf(n.split(' ')[0]) === 0 && n.split(' ')[0].length > 1) { best = i.ID; bl = n.length; } });
+    Object.keys(ALIAS).forEach(function (id) { ALIAS[id].forEach(function (a) { a = a.toLowerCase(); if (a.length > bl && t.indexOf(a) === 0 && item(id)) { best = id; bl = a.length; } }); });
+    return best;
+  }
+  function parseSpeech(text) {
+    var s = String(text || '').replace(/(\d),(\d{3})/g, '$1$2').replace(/₹\s*/g, ' ₹').replace(/([.,;!?])(?=\s|$)/g, ' , ');
+    var toks = s.split(/\s+/).filter(Boolean), segs = [], cur = null, pending = [];
+    function seg(id, word) { cur = { id: id, word: word, nums: pending.splice(0) }; segs.push(cur); }
+    for (var i = 0; i < toks.length; i++) {
+      var t = toks[i], low = t.toLowerCase();
+      if (t === ',' || SPLIT.test(t)) { if (cur && cur.nums.some(function (n) { return n.rs || !n.unit; })) cur = null; continue; }
+      var n = /^\d+(\.\d+)?/.test(t) ? parseFloat(t) : (NUMW[t] !== undefined ? NUMW[t] : null);
+      if (n !== null) {
+        // "இரண்டு நூறு" / "5 நூறு" → 200 / 500, "1 ஆயிரம்" → 1000
+        var nx = toks[i + 1]; if (nx && (nx === 'நூறு' || nx === 'ஆயிரம்') && n < 10) { n *= NUMW[nx]; i++; }
+        var rest = t.replace(/^\d+(\.\d+)?/, ''), unit = null, rs = false;
+        [rest, toks[i + 1] || ''].some(function (w, k) {
+          if (!w) return false;
+          var u = UNITW.find(function (x) { return x[0].test(w); }); if (u) { unit = u[1]; if (k) i++; return true; }
+          if (RS.test(w)) { rs = true; if (k) i++; return true; } return false;
+        });
+        (cur || { nums: pending }).nums.push({ v: n, unit: unit, rs: rs });
+        continue;
+      }
+      if (RS.test(t)) { var tgt = cur ? cur.nums : pending; if (tgt.length) tgt[tgt.length - 1].rs = true; continue; }
+      var id = itemFor(low);
+      if (id) {
+        if (cur && cur.id === id && !cur.nums.length) continue;       // "கோதுமை மாவு" = one item
+        if (cur && !cur.nums.length && pending.length === 0 && cur.id !== id) { cur.id = id; cur.word = t; continue; }
+        seg(id, t); continue;
+      }
+      if (cur && !cur.nums.length && cur.id === 'other') cur.word += ' ' + t;
+      else if (!cur || cur.nums.length) { /* stray word: keep as the name of an "other" item if numbers follow */ seg('other', t); cur.unknown = true; }
+    }
+    return segs.map(function (g) {
+      var it = item(g.id), amt = null, qty = null, unit = null;
+      var withUnit = g.nums.filter(function (x) { return x.unit; }), marked = g.nums.filter(function (x) { return x.rs; }), plain = g.nums.filter(function (x) { return !x.unit && !x.rs; });
+      if (withUnit.length) { qty = withUnit[0].v; unit = withUnit[0].unit; }
+      if (marked.length) amt = marked[marked.length - 1].v;
+      else if (plain.length) {
+        if (!qty && plain.length >= 2 && it && it.Kind === 'stock') { qty = plain[0].v; unit = it.Unit; amt = plain[plain.length - 1].v; }
+        else amt = plain[plain.length - 1].v;
+      }
+      if (unit === 'g' && it && it.Unit === 'kg') { qty = qty / 1000; unit = 'kg'; }
+      if (unit === 'ml' && it && it.Unit === 'L') { qty = qty / 1000; unit = 'L'; }
+      var w0 = it ? String(it.Name).toLowerCase().split(' ')[0] : '', gw = g.word.toLowerCase();
+      var nm = it && (gw === w0 || gw.indexOf(w0) === 0) ? '' : g.word;      // said the item's own name → no extra label
+      return { id: g.id, name: g.unknown || g.id === 'other' ? g.word : nm, qty: qty, unit: unit || (it && it.Unit) || '', amt: amt };
+    }).filter(function (r) { return r.amt > 0 || (r.id !== 'other' && r.qty); });
+  }
+  window.parseSpeech = parseSpeech;
+
+  function autoMonths(it, qty, unit) {
+    if (!it) return 0;
+    if (it.Kind === 'bill') return num(it.CycleMonths) || 1;
+    if (it.Kind !== 'stock' || !(qty > 0) || !(num(it.PerMonth) > 0)) return 0;
+    var m = conv(qty, unit || it.Unit, it.Unit) / num(it.PerMonth);
+    return m >= 1.1 ? Math.round(m * 10) / 10 : 0;
+  }
+  function reviewSheet(text, rows) {
+    var body = '<div class="vheard">🎤 <i>' + esc(text) + '</i></div>' + (rows.length ? '' : '<div class="empty">புரியவில்லை. மறுபடியும் பேசவும் அல்லது கீழே தட்டச்சு செய்யவும்.</div>') +
+      '<div id="vRows">' + rows.map(function (r, k) {
+        var it = item(r.id) || item('other');
+        return '<div class="vrow" data-k="' + k + '"><span class="e">' + it.Icon + '</span><div class="vt"><b>' + esc(r.name || it.Name) + '</b>' +
+          (it.Kind === 'stock' ? '<span class="vq"><input class="in num" data-f="qty" inputmode="decimal" value="' + (r.qty || '') + '" placeholder="அளவு"> ' + uL(r.unit || it.Unit) + '</span>' : '') + '</div>' +
+          '<span class="rs">₹</span><input class="in num vamt" data-f="amt" inputmode="decimal" value="' + (r.amt || '') + '"><button class="vx" data-vdel="' + k + '" aria-label="நீக்கு">✕</button></div>';
+      }).join('') + '</div>' +
+      '<label class="f">அல்லது தட்டச்சு செய்யவும்</label><div class="qty"><input class="in" id="vText" value="' + esc(text) + '" placeholder="தக்காளி 60, எண்ணெய் 5 லிட்டர் 900"><button class="btn" id="vRe">சரி</button></div>' +
+      '<div class="seg" style="margin-top:12px"><button data-vpaid="amma" class="on">என் கையிருப்பு</button><button data-vpaid="son">' + esc(son()) + ' கட்டினார்</button></div>';
+    var tot = sum(rows, function (r) { return num(r.amt); });
+    var s = openSheet('🎤 சரிபார்க்கவும்', body, '<button class="btn pri" id="vSave"' + (rows.length ? '' : ' disabled') + '>எல்லாம் சேமி ' + (tot ? inr(tot) : '') + ' ✓</button>');
+    var paid = 'amma';
+    s.addEventListener('click', function (e) {
+      var t = e.target.closest('[data-vdel],[data-vpaid],#vRe,#vSave'); if (!t) return;
+      if (t.dataset.vdel !== undefined) { rows.splice(+t.dataset.vdel, 1); swapTo(function () { reviewSheet(text, rows); }); return; }
+      if (t.dataset.vpaid) { paid = t.dataset.vpaid; s.querySelectorAll('[data-vpaid]').forEach(function (b) { b.classList.toggle('on', b === t); }); return; }
+      if (t.id === 'vRe') { var tx = s.querySelector('#vText').value; swapTo(function () { reviewSheet(tx, parseSpeech(tx)); }); return; }
+      if (t.id === 'vSave') {
+        s.querySelectorAll('.vrow').forEach(function (el) { var r = rows[+el.dataset.k]; el.querySelectorAll('[data-f]').forEach(function (inp) { r[inp.dataset.f] = evalAmt(inp.value); }); });
+        var ok = rows.filter(function (r) { return r.amt > 0; }); if (!ok.length) { toast('தொகையை போடவும்'); return; }
+        history.back();
+        ok.forEach(function (r) {
+          var it = item(r.id) || item('other');
+          save('Purchases', { Date: today(), ItemID: it.ID, Name: r.name || '', Cat: it.Cat, Qty: r.qty > 0 ? r.qty : '', Unit: r.qty > 0 ? (r.unit || it.Unit) : '', Amount: r.amt, Months: autoMonths(it, r.qty, r.unit), Shop: '', PaidBy: paid, Note: '🎤' });
+        });
+        toast(ok.length + ' பொருள் சேமிக்கப்பட்டது ✓ ' + inr(sum(ok, function (r) { return r.amt; })));
+      }
+    });
+    s.addEventListener('input', function () {
+      var tot2 = 0; s.querySelectorAll('.vamt').forEach(function (i) { tot2 += num(evalAmt(i.value)) || 0; });
+      var b = s.querySelector('#vSave'); if (b) b.textContent = 'எல்லாம் சேமி ' + (tot2 ? inr(tot2) : '') + ' ✓';
+    });
+  }
+  function listen() {
+    var SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+    if (!SR) { reviewSheet('', []); setTimeout(function () { var x = document.getElementById('vText'); if (x) x.focus(); }, 300); return; }
+    var r = new SR(); r.lang = 'ta-IN'; r.interimResults = true; r.maxAlternatives = 1; r.continuous = false;
+    var ov = document.createElement('div'); ov.className = 'vlisten'; ov.innerHTML = '<div class="vbox"><div class="vmic">🎤</div><b>பேசுங்கள்…</b><div class="note">எ.கா. "தக்காளி 60 ரூபாய், எண்ணெய் 5 லிட்டர் 900"</div><div class="vlive"></div><button class="btn" data-vstop>முடிந்தது</button></div>';
+    document.body.appendChild(ov);
+    var said = '', done = false;
+    function finish() { if (done) return; done = true; ov.remove(); reviewSheet(said.trim(), parseSpeech(said)); }
+    r.onresult = function (e) { said = ''; for (var i = 0; i < e.results.length; i++) said += e.results[i][0].transcript + ' '; ov.querySelector('.vlive').textContent = said; };
+    r.onerror = function (e) { if (done) return; done = true; ov.remove(); if (e.error === 'not-allowed') toast('மைக் அனுமதி தேவை'); reviewSheet(said.trim(), parseSpeech(said)); };
+    r.onend = finish;
+    ov.querySelector('[data-vstop]').onclick = function () { try { r.stop(); } catch (x) { finish(); } };
+    try { r.start(); } catch (x) { finish(); }
+  }
+  window.startVoice = listen;
+
+  /* ---------- buy form: "same as last time" and "save + add another" ---------- */
+  var _buyForm = window.buyForm, AGAIN = null;
+  window.buyForm = function (itemId, edit) {
+    _buyForm(itemId, edit);
+    var s = SHEETS[SHEETS.length - 1]; if (!s || edit) return;
+    var q = function (id) { return s.querySelector('#' + id); }, l = itemId && lastBuy(itemId);
+    if (l && q('bAmt')) {
+      var chip = document.createElement('button'); chip.className = 'chip again'; chip.type = 'button';
+      chip.innerHTML = '↺ கடந்த முறை போல: ' + (num(l.Qty) ? fq(l.Qty) + ' ' + uL(l.Unit) + ' · ' : '') + inr(l.Amount) + (l.Shop ? ' · ' + esc(l.Shop) : '');
+      var amtWrap = q('bAmt').closest('.amt') || q('bAmt'); amtWrap.parentNode.insertBefore(chip, amtWrap);
+      chip.onclick = function () {
+        if (q('bQty') && num(l.Qty)) { q('bQty').value = fq(l.Qty); if (q('bUnit') && l.Unit) { q('bUnit').value = l.Unit; q('bUnit').dispatchEvent(new Event('change', { bubbles: true })); } }
+        q('bAmt').value = num(l.Amount); if (l.Shop && q('bShop')) q('bShop').value = l.Shop;
+        q('bAmt').dispatchEvent(new Event('input', { bubbles: true })); q('bAmt').focus();
+      };
+    }
+    if (AGAIN) { if (q('bShop') && AGAIN.shop) q('bShop').value = AGAIN.shop; if (AGAIN.date && AGAIN.date !== today() && q('bDate')) { q('bDate').value = AGAIN.date; q('bDate').dispatchEvent(new Event('change', { bubbles: true })); } AGAIN = null; }
+    var save = q('bSave'); if (!save) return;
+    var more = document.createElement('button'); more.className = 'btn more'; more.type = 'button'; more.textContent = '+ இன்னொன்று';
+    save.parentNode.insertBefore(more, save);
+    more.onclick = function () {
+      if (!(evalAmt(q('bAmt').value) > 0)) { q('bAmt').focus(); return; }
+      var dt = q('bDate') && q('bDate').value;
+      AGAIN = { shop: q('bShop') ? q('bShop').value.trim() : '', date: dt || today() };
+      save.click();
+      setTimeout(function () { openBuy(); }, 380);
+    };
+  };
+
+  /* ---------- wiring ---------- */
+  document.addEventListener('click', function (e) {
+    var t = e.target.closest('[data-act="voice"],[data-act="morealerts"],#mic'); if (!t) return;
+    e.stopPropagation();
+    if (t.dataset.act === 'morealerts') { SHOW_ALL_ALERTS = !SHOW_ALL_ALERTS; render(); return; }
+    listen();
+  }, true);
+  var mic = document.createElement('button'); mic.id = 'mic'; mic.setAttribute('aria-label', 'பேசி சேர்'); mic.textContent = '🎤';
+  document.body.appendChild(mic);
+  var _render = window.render;
+  window.render = function () { _render(); var m = document.getElementById('mic'); if (m) m.style.display = TAB === 'money' ? 'none' : ''; };
+})();
+
+</script>
+</body>
+</html>
