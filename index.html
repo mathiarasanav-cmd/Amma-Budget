@@ -80,6 +80,14 @@ h1 small { margin-left: auto; font-size: 13px; font-weight: 400; color: var(--m)
 .err { color: var(--r); min-height: 24px; }
 .photo { width: 100%; max-height: 180px; object-fit: contain; border-radius: 12px; background: var(--bg); margin-bottom: 8px; }
 .tot { display: flex; justify-content: space-between; font-weight: 800; padding: 8px 4px 0; }
+.book-top { display: flex; align-items: center; gap: 8px; margin-bottom: 10px; }
+.book-top button, .chipb { border: 2px solid var(--line); background: #fff; border-radius: 12px; font: inherit; font-size: 17px; padding: 8px 12px; }
+.chipb.on { background: #0d7a5f; color: #fff; border-color: #0d7a5f; }
+.chips2 { display: flex; gap: 6px; overflow-x: auto; padding-bottom: 6px; margin-bottom: 8px; }
+.dayh { display: flex; justify-content: space-between; font-weight: 800; margin: 14px 4px 4px; color: #444; }
+.fld { display: block; margin: 8px 0; font-size: 15px; color: #555; }
+.fld input, .fld select { display: block; width: 100%; box-sizing: border-box; font: inherit; font-size: 20px; color: #111; border: 2px solid var(--line); border-radius: 12px; padding: 10px; margin-top: 3px; background: #fff; }
+.bookbtn { width: 100%; border: 2px solid #0d7a5f; color: #0d7a5f; background: #fff; border-radius: 16px; font: inherit; font-weight: 800; font-size: 19px; padding: 12px; margin-bottom: 12px; }
 </style>
 </head>
 <body>
@@ -95,7 +103,7 @@ function inr(v) { var x = Math.round(Math.abs(n(v))); return (n(v) < 0 ? '−' :
 function ls(k, v) { try { if (v === undefined) return localStorage.getItem(k); if (v === null) localStorage.removeItem(k); else localStorage.setItem(k, v); } catch (e) { return null; } }
 function toast(t) { var d = document.createElement('div'); d.className = 'toast'; d.textContent = t; document.body.appendChild(d); setTimeout(function () { d.remove(); }, 3200); }
 function today() { var d = new Date(); return d.getFullYear() + '-' + ('0' + (d.getMonth() + 1)).slice(-2) + '-' + ('0' + d.getDate()).slice(-2); }
-function dayLabel(s) { var t = today(), y = new Date(); y.setDate(y.getDate() - 1); var ys = y.getFullYear() + '-' + ('0' + (y.getMonth() + 1)).slice(-2) + '-' + ('0' + y.getDate()).slice(-2); if (s === t) return 'இன்று'; if (s === ys) return 'நேற்று'; var p = String(s).split('-'); return +p[2] + ' ' + (MN[+p[1] - 1] || '').slice(0, 4); }
+function dayLabel(s) { var t = today(), y = new Date(); y.setDate(y.getDate() - 1); var ys = y.getFullYear() + '-' + ('0' + (y.getMonth() + 1)).slice(-2) + '-' + ('0' + y.getDate()).slice(-2); if (s === t) return 'இன்று'; if (s === ys) return 'நேற்று'; var p = String(s).split('-'); return +p[2] + ' ' + (MN[+p[1] - 1] || ''); }
 
 /* ---------- server ---------- */
 function post(body) {
@@ -132,38 +140,92 @@ function entries(limitDays) {
   var fs = from.toISOString().slice(0, 10);
   D.Cash.forEach(function (c) { if (c.Date >= fs && c.Kind === 'count') { out.push({ t: 'Cash', id: c.ID, date: c.Date, at: c.CreatedAt, ic: '💰', title: (String(c.Note || '').match(/கையில் எண்ணியது ₹[\d.]+/) || ['கையில் எண்ணியது'])[0], sub: n(c.Amount) < 0 ? 'பதிவு செய்யாத செலவு ' + inr(-n(c.Amount)) : 'கூடுதல் ' + inr(c.Amount), amt: Math.abs(n(c.Amount)), cls: n(c.Amount) < 0 ? 'out' : 'in', sign: n(c.Amount) < 0 ? '' : '+' }); return; }
     if (c.Date >= fs) out.push({ t: 'Cash', id: c.ID, date: c.Date, at: c.CreatedAt, ic: '💵', title: (/^mathi$/i.test(c.From || '') ? 'மதி' : (c.From || 'பணம்')) + ' கொடுத்தது', sub: c.Note && c.Note.indexOf('கொடுத்தது') < 0 ? c.Note : '', amt: n(c.Amount), cls: 'in', sign: '+' }); });
-  D.Purchases.forEach(function (p) { if (p.Date >= fs && p.ItemID !== 'errand') out.push({ t: 'Purchases', id: p.ID, date: p.Date, at: p.CreatedAt, ic: icon(p.ItemID), title: p.Name + (p.Qty ? ' ' + p.Qty + ' ' + (p.Unit || '') : ''), sub: p.PaidBy === 'son' ? 'மதி கட்டினார்' : p.PaidBy === 'errand' ? 'அப்பா வாங்கியது' : '', amt: n(p.Amount), cls: 'out', sign: '' }); });
-  (D.Errands || []).forEach(function (e) { if (e.Date >= fs || (e.ReturnedOn || '') >= fs) out.push({ t: 'Errands', id: e.ID, date: e.ReturnedOn || e.Date, at: e.CreatedAt, ic: '🧾', title: e.Person + 'விடம் கொடுத்தது' + (e.List ? ' – ' + e.List : ''), sub: e.Status === 'closed' ? 'திரும்ப ' + inr(e.Returned) + ' · செலவு ' + inr(e.Spent) : 'இன்னும் மீதி வரவில்லை', amt: n(e.Given), cls: 'out', sign: '' }); });
+  D.Purchases.forEach(function (p) { if (p.Date >= fs && p.ItemID !== 'errand') out.push({ t: 'Purchases', id: p.ID, date: p.Date, at: p.CreatedAt, ic: icon(p.ItemID), title: (p.Detail === 'pending' ? '📝 ' : '') + p.Name + (p.Qty ? ' ' + p.Qty + ' ' + (p.Unit || '') : ''), sub: [byText(p), p.ParentID ? p.Note + ' விவரம்' : '', p.Detail === 'pending' ? 'விவரம் சேர்க்கலாம்' : ''].filter(Boolean).join(' · '), amt: n(p.Amount), cls: 'out', sign: '', pending: p.Detail === 'pending' }); });
+  (D.Errands || []).forEach(function (e) { if (e.Date >= fs || (e.ReturnedOn || '') >= fs) out.push({ t: 'Errands', id: e.ID, date: e.ReturnedOn || e.Date, at: e.CreatedAt, ic: '🧾', title: idam(e.Person) + ' கொடுத்தது' + (e.List ? ' – ' + e.List : ''), sub: e.Status === 'closed' ? 'திரும்ப ' + inr(e.Returned) + ' · செலவு ' + inr(e.Spent) : 'இன்னும் மீதி வரவில்லை', amt: n(e.Given), cls: 'out', sign: '' }); });
   return out.sort(function (a, b) { return String(b.date).localeCompare(String(a.date)) || String(b.at).localeCompare(String(a.at)); });
 }
+/* ---------- 🔊 morning summary: what was spent yesterday, spoken in Tamil ---------- */
+var MORNING_TRIED = false;
+function ymd(d) { return d.getFullYear() + '-' + ('0' + (d.getMonth() + 1)).slice(-2) + '-' + ('0' + d.getDate()).slice(-2); }
+function rs(v) { return Math.round(n(v)) + ' ரூபாய்'; }
+function morning() {
+  var now = new Date(); if (now.getHours() < 5 || (now.getHours() >= 12 && ls('amma_spoken') === today())) return '';
+  var y = new Date(now); y.setDate(y.getDate() - 1); var yd = ymd(y), c = calc();
+  var pur = D.Purchases.filter(function (p) { return p.Date === yd; }), spent = pur.reduce(function (t, p) { return t + n(p.Amount); }, 0);
+  var via = {}; pur.filter(function (p) { return p.PaidBy === 'errand'; }).forEach(function (p) { var k = errPerson(p.ErrandID); via[k] = (via[k] || 0) + n(p.Amount); });
+  var viaT = Object.keys(via).map(function (k) { return k + ' மூலம் ' + rs(via[k]); }).join(', ');
+  var got = D.Cash.filter(function (x) { return x.Date === yd && x.Kind !== 'count' && n(x.Amount) > 0; }).reduce(function (t, x) { return t + n(x.Amount); }, 0);
+  var cats = {}; pur.forEach(function (p) { var k = p.Cat || 'மற்றவை'; cats[k] = (cats[k] || 0) + n(p.Amount); });
+  var top = Object.keys(cats).sort(function (a, b) { return cats[b] - cats[a]; }).slice(0, 3).map(function (k) { return k + ' ' + rs(cats[k]); }).join(', ');
+  var pend = pendingList().length;
+  return 'வணக்கம் அம்மா. ' + (spent ? 'நேற்று ' + rs(spent) + ' செலவு ஆனது' + (top ? ' – ' + top : '') + '.' + (viaT ? ' அதில் ' + viaT + '.' : '') : 'நேற்று எந்த செலவும் பதிவு ஆகவில்லை. மறந்திருந்தால் "நேத்து 200 காய்கறி" என்று சொல்லுங்கள்.') +
+    (got ? ' மதி ' + rs(got) + ' கொடுத்தார்.' : '') + ' இப்போது கையில் ' + rs(c.cash) + ' இருக்கு. இந்த மாதம் இதுவரை ' + rs(c.monthOut) + ' செலவு.' +
+    withPeople().map(function (x) { return ' ' + idam(x.p) + ' ' + rs(x.a) + ' இருக்கு.'; }).join('') + (pend ? ' ' + pend + ' பதிவுகளுக்கு விவரம் சேர்க்க வேண்டும்.' : '');
+}
+function speak(text, onStart) {
+  try {
+    if (!window.speechSynthesis || !text) return false;
+    speechSynthesis.cancel();
+    var u = new SpeechSynthesisUtterance(text); u.lang = 'ta-IN'; u.rate = 0.9; if (onStart) u.onstart = onStart;
+    var v = speechSynthesis.getVoices().find(function (x) { return /^ta/i.test(x.lang); }); if (v) u.voice = v;
+    speechSynthesis.speak(u); return true;
+  } catch (e) { return false; }
+}
+function idam(p) { p = String(p || ''); return /[ிீை]$/.test(p) ? p + 'யிடம்' : p + 'விடம்'; }
+function errPerson(id) { var e = (D.Errands || []).find(function (x) { return x.ID === id; }); return e ? e.Person : 'தாத்தா'; }
+function byText(p) { return p.PaidBy === 'son' ? 'மதி கட்டினார்' : p.PaidBy === 'errand' ? errPerson(p.ErrandID) + ' வாங்கியது' : ''; }
+function withPeople() {   // money still with Thatha / Mathi / Bakkiya, per person
+  var m = {}; (D.Errands || []).filter(function (e) { return e.Status !== 'closed'; }).forEach(function (e) { m[e.Person] = (m[e.Person] || 0) + n(e.Given); });
+  return Object.keys(m).map(function (k) { return { p: k, a: m[k] }; });
+}
+function pendingList() { return (D.Purchases || []).filter(function (p) { return p.Detail === 'pending'; }).sort(function (a, b) { return String(b.Date).localeCompare(String(a.Date)); }); }
 function icon(id) { var it = (D.Items || []).find(function (i) { return i.ID === id; }); return it && it.Icon ? it.Icon : '🛍️'; }
 
 /* ---------- home ---------- */
+var VIEW = 'home';
 function render() {
   if (!D) return;
+  if (VIEW === 'book') return renderBook();
   var c = calc(), open = (D.Errands || []).filter(function (e) { return e.Status !== 'closed'; });
+  var mb = morning();
   var h = '<h1>அம்மா கணக்கு <small>' + dayLabel(today()) + '</small></h1>' +
+    (mb ? '<div class="card" id="mcard" style="background:#fff7e0;border:2px solid #f0c040"><div class="t" style="font-size:19px;font-weight:800">🔊 நேற்றைய கணக்கு <span style="font-size:14px;font-weight:600;opacity:.7">(தொட்டால் சொல்லும்)</span></div><div style="font-size:17px;margin-top:6px;line-height:1.5">' + esc(mb) + '</div></div>' : '') +
     (D.Cash.some(function (x) { return x.Kind === 'count'; }) ? '' : '<div class="card errand"><div class="t">💰 முதலில்: இப்போது கையில் எவ்வளவு பணம் இருக்கு?</div><div style="font-size:15px;margin-top:4px">எண்ணி போடுங்கள் – இன்று முதல் கணக்கு சரியாக இருக்கும்.</div><div class="r"><input inputmode="numeric" placeholder="₹ கையில் உள்ளது" id="cnt0"><button id="cntgo">சரி</button></div></div>') +
     '<div class="card hero" id="hero"><div class="k">கையில் உள்ள பணம் <span style="font-size:13px;opacity:.8">(தொட்டு சரிசெய்யலாம்)</span></div><div class="big">' + inr(c.cash) + '</div>' +
     '<div class="row"><div>' + (MN[+c.m.slice(5) - 1] || '') + ' வந்தது<b>' + inr(c.monthIn) + '</b></div><div>இந்த மாத செலவு<b>' + inr(c.monthOut) + '</b></div>' +
-    (c.outAppa ? '<div>அப்பாவிடம்<b>' + inr(c.outAppa) + '</b></div>' : '') + '</div></div>' +
+    withPeople().map(function (x) { return '<div>' + esc(idam(x.p)) + '<b>' + inr(x.a) + '</b></div>'; }).join('') + '</div></div>' +
     '<div class="acts"><button class="act mic" id="bMic"><span class="i">🎤</span><span>பேசுங்கள்</span></button>' +
     '<button class="act type" id="bType"><span class="i">✍️</span><span>எழுதுங்கள்</span></button>' +
     '<button class="act cam" id="bCam"><span class="i">📷</span><span>பேப்பர்</span></button></div>' +
     '<div class="typebox" id="tbox"><textarea id="tin" rows="2" placeholder="எ.கா. 500 rs 1 kg mutton vaanginen"></textarea><button id="tgo">சரி</button></div>' +
-    '<div class="eg">எ.கா: "மதி 5000 கொடுத்தான்" · "250 காய்கறி வாங்கினேன்" · "அப்பா கிட்ட 1000 கொடுத்தேன் மளிகை வாங்க" · "அப்பா 320 திருப்பி கொடுத்தார்"</div>';
+    '<div class="eg">எ.கா: "மதி 5000 கொடுத்தான்" · "250 காய்கறி வாங்கினேன்" · "தாத்தா கிட்ட 1000 கொடுத்தேன் மளிகை வாங்க" · "பாக்கியா கிட்ட 500 கொடுத்தேன்" · "நேத்து 200 காய்கறி" · "20ஆம் தேதி 450 மருந்து" · "தாத்தா 780 மளிகை, 30 டீ, 100 பெட்ரோல், 90 மீதி"</div>' +
+    '<button class="bookbtn" id="bBook">📒 எல்லா கணக்கும் பார்க்க / திருத்த</button>';
   open.forEach(function (e) {
-    h += '<div class="card errand"><div class="t">🧾 ' + esc(e.Person) + 'விடம் ' + inr(e.Given) + ' கொடுத்தீர்கள் (' + dayLabel(e.Date) + ')' + (e.List ? ' – ' + esc(e.List) : '') + '</div>' +
-      '<div style="font-size:15px;margin-top:4px">மீதி எவ்வளவு திரும்ப வந்தது?</div>' +
+    h += '<div class="card errand"><div class="t">🧾 ' + esc(idam(e.Person)) + ' ' + inr(e.Given) + ' கொடுத்தீர்கள் (' + dayLabel(e.Date) + ')' + (e.List ? ' – ' + esc(e.List) : '') + '</div>' +
+      '<div style="font-size:15px;margin-top:6px">வந்ததும் 🎤 அழுத்தி என்ன வாங்கினார், மீதி எவ்வளவு என்று சொல்லுங்கள்:</div>' +
+      '<div style="font-size:14px;opacity:.8">"' + esc(e.Person) + ' 780 மளிகை, 30 டீ, 100 பெட்ரோல், 90 மீதி"</div>' +
+      '<div class="r"><button data-esay="' + e.ID + '" style="flex:1">🎤 சொல்லுங்கள்</button><button data-etype="' + esc(e.Person) + '" style="flex:1">✍️ எழுதுங்கள்</button></div>' +
+      '<div style="font-size:14px;margin-top:8px">அல்லது மீதி மட்டும்:</div>' +
       '<div class="r"><input inputmode="numeric" placeholder="₹ மீதி" data-back="' + e.ID + '"><button data-close="' + e.ID + '">சரி</button></div></div>';
   });
+  var pend = pendingList();
+  if (pend.length) h += '<div class="card errand" style="background:#eef5ff;border-color:#9cc2f0"><div class="t">📝 விவரம் சேர்க்க வேண்டியவை (' + pend.length + ')</div>' +
+    '<div style="font-size:15px;margin:4px 0">தொட்டு என்ன வாங்கியது என்று சொல்லுங்கள் / எழுதுங்கள் / பேப்பர் படம் எடுங்கள். எப்போது வேண்டுமானாலும் செய்யலாம்.</div>' +
+    pend.map(function (p) { return '<div class="li" data-detail="' + p.ID + '"><div class="ic">' + icon(p.ItemID) + '</div><div class="tx"><b>' + esc(p.Name) + '</b><small>' + dayLabel(p.Date) + (p.PaidBy === 'errand' ? ' · ' + errPerson(p.ErrandID) : '') + '</small></div><div class="a out">' + inr(p.Amount) + '</div></div>'; }).join('') + '</div>';
+  try { if (navigator.setAppBadge) { if (pend.length) navigator.setAppBadge(pend.length); else navigator.clearAppBadge(); } } catch (x) {}
   var list = entries(2);
   h += '<div class="sec">இன்றும் நேற்றும்</div><div class="card" style="padding:4px 12px">' + (list.length ? list.map(function (x) {
     return '<div class="li" data-del="' + x.t + ':' + x.id + '"><div class="ic">' + x.ic + '</div><div class="tx"><b>' + esc(x.title) + '</b><small>' + dayLabel(x.date) + (x.sub ? ' · ' + esc(x.sub) : '') + '</small></div><div class="a ' + x.cls + '">' + x.sign + inr(x.amt) + '</div></div>';
   }).join('') : '<div class="empty">இன்னும் எதுவும் இல்லை. மேலே 🎤 அழுத்தி சொல்லுங்கள்.</div>') + '</div>' +
     (D.aiReady ? '' : '<div class="eg">⚠️ AI இன்னும் அமைக்கப்படவில்லை – எளிய வாக்கியங்கள் மட்டும் புரியும் (மதியிடம் சொல்லுங்கள்).</div>');
   $('app').innerHTML = h;
-  $('bMic').onclick = listen;
+  $('bMic').onclick = function () { DETAIL = null; listen(); };
+  $('bBook').onclick = function () { VIEW = 'book'; BOOK.m = today().slice(0, 7); render(); window.scrollTo(0, 0); };
+  if ($('mcard')) {
+    var heard = function () { ls('amma_spoken', today()); };
+    $('mcard').onclick = function () { speak(mb, heard); };
+    if (ls('amma_spoken') !== today() && !MORNING_TRIED) { MORNING_TRIED = true; setTimeout(function () { speak(mb, heard); }, 600); }
+  }
   if ($('cntgo')) $('cntgo').onclick = function () { setCash($('cnt0').value); };
   $('hero').onclick = function () {
     sheet('<h2>கையில் இப்போது எவ்வளவு இருக்கு?</h2><div class="said">எண்ணி பார்த்து போடுங்கள். இதுவே இனி கையிருப்பு.</div>' +
@@ -171,20 +233,36 @@ function render() {
       '<div class="btns"><button class="no" data-x>வேண்டாம்</button><button class="ok" id="cnt1go">சரி ✓</button></div>');
     $('cnt1').focus(); $('cnt1go').onclick = function () { setCash($('cnt1').value); };
   };
-  $('bType').onclick = function () { $('tbox').classList.toggle('on'); if ($('tbox').classList.contains('on')) $('tin').focus(); };
+  $('bType').onclick = function () { DETAIL = null; $('tbox').classList.toggle('on'); if ($('tbox').classList.contains('on')) $('tin').focus(); };
   $('tgo').onclick = function () { var t = $('tin').value.trim(); if (t) { $('tin').value = ''; $('tbox').classList.remove('on'); understand(t); } };
-  $('bCam').onclick = function () { $('cam').value = ''; $('cam').click(); };
+  $('bCam').onclick = function () { DETAIL = null; $('cam').value = ''; $('cam').click(); };
 }
 document.addEventListener('click', function (ev) {
+  if (ev.target.closest('[data-esay]')) { DETAIL = null; listen(); return; }
+  var et = ev.target.closest('[data-etype]');
+  if (et) { DETAIL = null; $('tbox').classList.add('on'); $('tin').value = et.dataset.etype + ' '; $('tin').focus(); return; }
   var c = ev.target.closest('[data-close]');
   if (c) {
     var inp = document.querySelector('[data-back="' + c.dataset.close + '"]'), v = String(inp.value).replace(/[^\d.]/g, '');
     if (v === '') { toast('திரும்ப வந்த தொகையை போடுங்கள் (எதுவும் இல்லை என்றால் 0)'); return; }
     busy('சேமிக்கிறேன்…');
-    call('closeErrand', c.dataset.close, Number(v)).then(function (r) { close(); toast('சரி ✓ அப்பா செலவு ' + inr(r.spent)); load(); }, fail);
+    call('closeErrand', c.dataset.close, Number(v)).then(function (r) { close(); toast('சரி ✓ செலவு ' + inr(r.spent)); load(); }, fail);
     return;
   }
+  var bf = ev.target.closest('[data-bf]'); if (bf) { BOOK.f = bf.dataset.bf; render(); return; }
+  var ed = ev.target.closest('[data-edit]'); if (ed) { var ep = ed.dataset.edit.split(':'); editSheet(ep[0], ep[1]); return; }
+  var dt = ev.target.closest('[data-detail]');
+  if (dt) { detailSheet(dt.dataset.detail); return; }
+  if (ev.target.closest('[data-dsay]')) { DETAIL = ev.target.closest('[data-dsay]').dataset.dsay; listen(); return; }
+  if (ev.target.closest('[data-dcam]')) { DETAIL = ev.target.closest('[data-dcam]').dataset.dcam; close(); $('cam').value = ''; $('cam').click(); return; }
+  var dg = ev.target.closest('[data-dgo]');
+  if (dg) { var tx = ($('dtin').value || '').trim(); if (!tx) { toast('என்ன வாங்கியது என்று எழுதுங்கள்'); return; } DETAIL = dg.dataset.dgo; understand(tx); return; }
+  var dok = ev.target.closest('[data-dok]');
+  if (dok) { busy('சேமிக்கிறேன்…'); call('upsert', 'Purchases', { ID: dok.dataset.dok, Detail: '' }).then(function () { close(); toast('சரி ✓'); load(); }, fail); return; }
+  var ddel = ev.target.closest('[data-ddel]');
+  if (ddel) { delSheet('Purchases', ddel.dataset.ddel, ddel.dataset.t); return; }
   var d = ev.target.closest('[data-del]');
+  if (d) { var pp = d.dataset.del.split(':'); editSheet(pp[0], pp[1]); return; }
   if (d) {
     var p = d.dataset.del.split(':');
     sheet('<h2>இதை நீக்கவா?</h2><div class="said">' + esc(d.querySelector('b').textContent) + ' · ' + esc(d.querySelector('.a').textContent) + '</div>' +
@@ -193,6 +271,117 @@ document.addEventListener('click', function (ev) {
   }
   if (ev.target.closest('[data-x]')) close();
 });
+
+/* ---------- 📒 every entry: look and edit ---------- */
+var BOOK = { m: '', f: 'all', q: '' };
+function bookRows(m) {
+  var out = [];
+  D.Cash.forEach(function (c) { if (c.Month !== m) return;
+    out.push(c.Kind === 'count'
+      ? { t: 'Cash', id: c.ID, date: c.Date, at: c.CreatedAt, k: 'count', ic: '💰', title: 'கையில் எண்ணியது', sub: n(c.Amount) < 0 ? 'பதிவு செய்யாத செலவு' : 'கூடுதல்', amt: Math.abs(n(c.Amount)), cls: n(c.Amount) < 0 ? 'out' : 'in', sign: n(c.Amount) < 0 ? '' : '+' }
+      : { t: 'Cash', id: c.ID, date: c.Date, at: c.CreatedAt, k: 'in', ic: '💵', title: (/^mathi$/i.test(c.From || '') ? 'மதி' : (c.From || 'பணம்')) + ' கொடுத்தது', sub: '', amt: n(c.Amount), cls: 'in', sign: '+' }); });
+  D.Purchases.forEach(function (p) { if (p.Month !== m || p.ItemID === 'errand') return;
+    out.push({ t: 'Purchases', id: p.ID, date: p.Date, at: p.CreatedAt, k: p.Detail === 'pending' ? 'out pend' : 'out', ic: icon(p.ItemID), title: (p.Detail === 'pending' ? '📝 ' : '') + p.Name + (p.Qty ? ' ' + p.Qty + ' ' + (p.Unit || '') : ''),
+      sub: [p.Cat, byText(p), p.ParentID ? p.Note + ' விவரம்' : ''].filter(Boolean).join(' · '), amt: n(p.Amount), cls: 'out', sign: '' }); });
+  (D.Errands || []).forEach(function (e) { if (String(e.Date).slice(0, 7) !== m) return;
+    out.push({ t: 'Errands', id: e.ID, date: e.Date, at: e.CreatedAt, k: 'give', ic: '🧾', title: idam(e.Person) + ' கொடுத்தது' + (e.List ? ' – ' + e.List : ''),
+      sub: e.Status === 'closed' ? 'திரும்ப ' + inr(e.Returned) + ' · செலவு ' + inr(e.Spent) : 'இன்னும் மீதி வரவில்லை', amt: n(e.Given), cls: 'out', sign: '' }); });
+  return out.sort(function (a, b) { return String(b.date).localeCompare(String(a.date)) || String(b.at).localeCompare(String(a.at)); });
+}
+function renderBook() {
+  var m = BOOK.m || today().slice(0, 7), rows = bookRows(m);
+  var spent = D.Purchases.filter(function (p) { return p.Month === m; }).reduce(function (t, p) { return t + n(p.Amount); }, 0);
+  var got = D.Cash.filter(function (c) { return c.Month === m && c.Kind !== 'count' && n(c.Amount) > 0; }).reduce(function (t, c) { return t + n(c.Amount); }, 0);
+  var list = rows.filter(function (r) { return (BOOK.f === 'all' || r.k.split(' ').indexOf(BOOK.f) >= 0) && (!BOOK.q || (r.title + ' ' + r.sub).toLowerCase().indexOf(BOOK.q) >= 0); });
+  var h = '<div class="book-top"><button id="bkHome">← வீடு</button><button id="bkPrev">◀</button><b style="flex:1;text-align:center;font-size:20px">' + MN[+m.slice(5) - 1] + ' ' + m.slice(0, 4) + '</b><button id="bkNext">▶</button></div>' +
+    '<div class="card hero" style="padding:12px 16px"><div class="row"><div>வந்தது<b>' + inr(got) + '</b></div><div>செலவு<b>' + inr(spent) + '</b></div><div>கையில்<b>' + inr(calc().cash) + '</b></div></div></div>' +
+    '<div class="chips2">' + [['all', 'எல்லாம்'], ['in', '💵 வந்தது'], ['out', '🛒 செலவு'], ['give', '🧾 கொடுத்தது'], ['pend', '📝 விவரம்']].map(function (c) { return '<button class="chipb' + (BOOK.f === c[0] ? ' on' : '') + '" data-bf="' + c[0] + '">' + c[1] + '</button>'; }).join('') + '</div>' +
+    '<input id="bkQ" placeholder="🔍 தேடு (எ.கா. அரிசி)" value="' + esc(BOOK.q) + '" style="width:100%;box-sizing:border-box;font:inherit;font-size:18px;border:2px solid var(--line);border-radius:12px;padding:10px;margin-bottom:6px">' +
+    '<div class="eg" style="margin:0 4px 4px">எதையாவது தொட்டு திருத்தலாம் அல்லது நீக்கலாம்.</div>';
+  var day = '';
+  if (!list.length) h += '<div class="card"><div class="empty">இந்த மாதம் எதுவும் இல்லை.</div></div>';
+  list.forEach(function (r, i) {
+    if (r.date !== day) {
+      if (day) h += '</div>';
+      day = r.date; var dt = rows.filter(function (x) { return x.date === day && x.t === 'Purchases'; }).reduce(function (t, x) { return t + x.amt; }, 0);
+      h += '<div class="dayh"><span>' + dayLabel(day) + '</span><span>' + (dt ? 'செலவு ' + inr(dt) : '') + '</span></div><div class="card" style="padding:4px 12px">';
+    }
+    h += '<div class="li" data-edit="' + r.t + ':' + r.id + '"><div class="ic">' + r.ic + '</div><div class="tx"><b>' + esc(r.title) + '</b><small>' + esc(r.sub) + '</small></div><div class="a ' + r.cls + '">' + r.sign + inr(r.amt) + '</div></div>';
+  });
+  if (day) h += '</div>';
+  $('app').innerHTML = h;
+  $('bkHome').onclick = function () { VIEW = 'home'; render(); window.scrollTo(0, 0); };
+  $('bkPrev').onclick = function () { BOOK.m = addMonth(m, -1); render(); };
+  $('bkNext').onclick = function () { BOOK.m = addMonth(m, 1); render(); };
+  $('bkQ').oninput = function () { BOOK.q = this.value.toLowerCase(); var pos = this.selectionStart; render(); var q = $('bkQ'); q.focus(); q.setSelectionRange(pos, pos); };
+}
+function addMonth(m, k) { var d = new Date(+m.slice(0, 4), +m.slice(5) - 1 + k, 1); return d.getFullYear() + '-' + ('0' + (d.getMonth() + 1)).slice(-2); }
+function cats() { var s = {}; (D.Items || []).forEach(function (i) { if (i.Cat) s[i.Cat] = 1; }); (D.Purchases || []).forEach(function (p) { if (p.Cat) s[p.Cat] = 1; }); return Object.keys(s); }
+function fld(label, id, val, type, extra) { return '<label class="fld">' + label + '<input id="' + id + '" type="' + (type || 'text') + '"' + (type === 'number' ? ' inputmode="decimal"' : '') + ' value="' + esc(val == null ? '' : val) + '"' + (extra || '') + '></label>'; }
+function sel(label, id, val, opts) { return '<label class="fld">' + label + '<select id="' + id + '">' + opts.map(function (o) { var v = Array.isArray(o) ? o[0] : o, t = Array.isArray(o) ? o[1] : o; return '<option value="' + esc(v) + '"' + (v === val ? ' selected' : '') + '>' + esc(t) + '</option>'; }).join('') + '</select></label>'; }
+var PEOPLE = ['தாத்தா', 'மதி', 'பாக்கியா'];
+function editSheet(t, id) {
+  var h = '', x;
+  if (t === 'Purchases') {
+    x = D.Purchases.find(function (p) { return p.ID === id; }); if (!x) return;
+    var cs = cats(); if (cs.indexOf(x.Cat) < 0) cs.unshift(x.Cat || 'மற்றவை');
+    h = '<h2>✏️ செலவு திருத்த</h2>' + (byText(x) ? '<div class="said">' + esc(byText(x)) + (x.ParentID ? ' · ' + esc(x.Note) + ' விவரம்' : '') + '</div>' : '') +
+      fld('என்ன', 'eName', x.Name) + (x.ItemID === 'thatha' || x.ItemID === 'errand' ? fld('தொகை ₹ (கொடுத்தது − மீதி − பொருட்கள் = தானாக கணக்கிடப்படும்)', 'eAmtR', x.Amount, 'number', ' readonly style="background:#f2f2f2"') : fld('தொகை ₹', 'eAmt', x.Amount, 'number')) +
+      '<div style="display:flex;gap:8px"><div style="flex:1">' + fld('அளவு', 'eQty', x.Qty, 'number') + '</div><div style="flex:1">' + sel('அலகு', 'eUnit', x.Unit || '', [['', '—'], 'kg', 'g', 'L', 'ml', 'pcs', 'dozen', 'packet']) + '</div></div>' +
+      sel('வகை', 'eCat', x.Cat || 'மற்றவை', cs) + fld('தேதி', 'eDate', x.Date, 'date') +
+      (x.ErrandID ? '' : sel('யார் கட்டியது', 'ePaid', x.PaidBy === 'son' ? 'son' : 'amma', [['amma', 'அம்மா (கையிலிருந்து)'], ['son', 'மதி நேரடியாக கட்டினார்']]));
+  } else if (t === 'Cash') {
+    x = D.Cash.find(function (c) { return c.ID === id; }); if (!x) return;
+    h = x.Kind === 'count' ? '<h2>💰 கையில் எண்ணியது</h2><div class="said">' + esc(x.Note || '') + '</div>' + fld('தேதி', 'eDate', x.Date, 'date')
+      : '<h2>✏️ வந்த பணம் திருத்த</h2>' + fld('தொகை ₹', 'eAmt', x.Amount, 'number') + sel('யார் கொடுத்தது', 'eFrom', /^mathi$|^மதி$/i.test(x.From || '') ? 'Mathi' : (x.From || 'Mathi'), [['Mathi', 'மதி'], ['பாக்கியா', 'பாக்கியா'], ['தாத்தா', 'தாத்தா'], ['மற்றவர்', 'மற்றவர்']].concat(/^(mathi|பாக்கியா|தாத்தா|மற்றவர்)$/i.test(x.From || 'Mathi') ? [] : [[x.From, x.From]])) + fld('தேதி', 'eDate', x.Date, 'date');
+  } else {
+    x = (D.Errands || []).find(function (e) { return e.ID === id; }); if (!x) return;
+    h = '<h2>✏️ ' + esc(idam(x.Person)) + ' கொடுத்தது</h2>' + sel('யாரிடம்', 'ePerson', x.Person, PEOPLE.concat(PEOPLE.indexOf(x.Person) < 0 ? [x.Person] : [])) +
+      fld('கொடுத்த தொகை ₹', 'eGiven', x.Given, 'number') + fld('எதற்கு', 'eList', x.List) + fld('தேதி', 'eDate', x.Date, 'date') +
+      (x.Status === 'closed' ? fld('திரும்ப வந்தது ₹', 'eBack', x.Returned, 'number') : '<div class="said">இன்னும் மீதி வரவில்லை</div>');
+  }
+  h += '<div class="btns"><button class="no" data-x>மூடு</button><button class="ok" id="eSave">சேமி ✓</button></div>' +
+    '<div class="btns" style="margin-top:6px">' + (t === 'Purchases' ? '<button class="no" data-detail="' + id + '">📝 விவரம் சேர்</button>' : '') +
+    '<button class="no" id="eDel" style="color:#c62828">🗑 நீக்கு</button></div>';
+  sheet(h);
+  $('eDel').onclick = function () { delSheet(t, id, (x.Name || x.Note || x.From || x.Person || '') + ' · ' + inr(x.Amount || x.Given)); };
+  $('eSave').onclick = function () {
+    var v = function (k) { var el = $(k); return el ? el.value : null; }, ch = {};
+    var put = function (f, k, old) { var nv = v(k); if (nv != null && String(nv) !== String(old == null ? '' : old)) ch[f] = nv; };
+    if (t === 'Purchases') { put('Name', 'eName', x.Name); put('Amount', 'eAmt', x.Amount); put('Qty', 'eQty', x.Qty); put('Unit', 'eUnit', x.Unit); put('Cat', 'eCat', x.Cat); put('Date', 'eDate', x.Date); if ($('ePaid')) put('PaidBy', 'ePaid', x.PaidBy === 'son' ? 'son' : 'amma'); }
+    else if (t === 'Cash') { put('Date', 'eDate', x.Date); if ($('eAmt')) { put('Amount', 'eAmt', x.Amount); put('From', 'eFrom', x.From); } }
+    else { put('Person', 'ePerson', x.Person); put('Given', 'eGiven', x.Given); put('List', 'eList', x.List); put('Date', 'eDate', x.Date); if ($('eBack')) put('Returned', 'eBack', x.Returned); }
+    if (!Object.keys(ch).length) { close(); return; }
+    busy('சேமிக்கிறேன்…');
+    call('editEntry', t, id, ch).then(function (r) {
+      close(); toast(r && r.warn ? '⚠️ பொருட்கள் ' + inr(r.warn.split(':')[1]) + ' அதிகம் – சரிபாருங்கள்' : 'திருத்தப்பட்டது ✓'); load();
+    }, function (e) {
+      var m = { AMOUNT: 'தொகை சரியில்லை', DATE: 'தேதி சரியில்லை', MORE: 'விவரத்தை விட அதிகம் – சரிபாருங்கள்', RETURNED: 'கொடுத்ததை விட அதிகம் திரும்ப வர முடியாது' }[e && e.message];
+      if (m) { close(); toast(m); } else fail(e);
+    });
+  };
+}
+
+/* ---------- 📝 add the item list of an earlier total, any time ---------- */
+var DETAIL = null;
+function detailSheet(id) {
+  var p = (D.Purchases || []).find(function (x) { return x.ID === id; }); if (!p) return;
+  var t = p.Name + ' · ' + inr(p.Amount);
+  sheet('<h2>📝 ' + esc(p.Name) + '</h2><div class="said">' + dayLabel(p.Date) + (byText(p) ? ' · ' + byText(p) : '') + ' · <b>' + inr(p.Amount) + '</b></div>' +
+    '<div style="font-size:16px;margin:6px 0">இதில் என்ன என்ன வாங்கினார்கள்? சொல்லுங்கள், எழுதுங்கள் அல்லது பேப்பர் படம் எடுங்கள்:</div>' +
+    '<div class="eg" style="margin:0 0 8px">எ.கா. "அரிசி 5 kg 300, பருப்பு 150, எண்ணெய் 180, சர்க்கரை 50, டீ 30, பெட்ரோல் 100"</div>' +
+    '<div class="acts" style="margin:6px 0"><button class="act mic" data-dsay="' + p.ID + '"><span class="i">🎤</span><span>பேசுங்கள்</span></button>' +
+    '<button class="act cam" data-dcam="' + p.ID + '"><span class="i">📷</span><span>பேப்பர்</span></button></div>' +
+    '<textarea id="dtin" rows="2" style="width:100%;font:inherit;font-size:18px;border:2px solid var(--line);border-radius:12px;padding:8px" placeholder="✍️ எழுதுங்கள்"></textarea>' +
+    '<div class="btns"><button class="ok" data-dgo="' + p.ID + '">✍️ சரி</button></div>' +
+    '<div class="btns" style="margin-top:6px">' + (p.Detail === 'pending' ? '<button class="no" data-dok="' + p.ID + '">விவரம் வேண்டாம்</button>' : '<button class="no" data-x>மூடு</button>') +
+    '<button class="no" data-ddel="' + p.ID + '" data-t="' + esc(t) + '" style="color:#c62828">நீக்கு</button></div>');
+}
+function delSheet(table, id, text) {
+  sheet('<h2>இதை நீக்கவா?</h2><div class="said">' + esc(text) + '</div>' +
+    '<div class="btns"><button class="no" data-x>வேண்டாம்</button><button class="ok" id="dyes" style="background:#c62828">நீக்கு</button></div>');
+  $('dyes').onclick = function () { busy('நீக்குகிறேன்…'); call('removeEntry', table, id).then(function () { close(); toast('நீக்கப்பட்டது'); load(); }, fail); };
+}
 
 function setCash(v) {
   v = String(v || '').replace(/[^\d.]/g, ''); if (v === '') { toast('தொகையை போடுங்கள்'); return; }
@@ -213,6 +402,11 @@ function fail(e) {
 
 /* ---------- voice ---------- */
 var REC = null;
+function dedupe(text) {   // same as the server: "meena meena meena 550" → "meena 550"
+  var w = String(text || '').replace(/\s+/g, ' ').trim().split(' '), ch = true;
+  while (ch) { ch = false; for (var n = Math.min(6, Math.floor(w.length / 2)); n >= 1 && !ch; n--) for (var i = 0; i + 2 * n <= w.length; i++) { if (w.slice(i, i + n).join(' ').toLowerCase() === w.slice(i + n, i + 2 * n).join(' ').toLowerCase()) { w.splice(i + n, n); ch = true; break; } } }
+  return w.join(' ');
+}
 function listen() {
   var SR = window.SpeechRecognition || window.webkitSpeechRecognition;
   if (!SR) { $('tbox').classList.add('on'); $('tin').focus(); toast('இந்த போனில் பேச்சு வசதி இல்லை – எழுதுங்கள்'); return; }
@@ -220,7 +414,22 @@ function listen() {
     '<div class="btns"><button class="no" data-x>நிறுத்து</button><button class="ok" id="ldone">முடிந்தது</button></div></div>');
   var said = '', rec = new SR(); REC = rec;
   rec.lang = 'ta-IN'; rec.interimResults = true; rec.continuous = true;
-  rec.onresult = function (e) { var t = ''; for (var i = 0; i < e.results.length; i++) t += e.results[i][0].transcript + ' '; said = t.trim(); var l = $('live'); if (l) l.textContent = said; };
+  // Android Chrome repeats earlier words in each new result ("meena", "meena meena 550"…): keep only the newest version of each phrase
+  var finals = [];
+  rec.onresult = function (e) {
+    var interim = '';
+    for (var i = e.resultIndex; i < e.results.length; i++) {
+      var t = e.results[i][0].transcript.trim(); if (!t) continue;
+      if (!e.results[i].isFinal) { interim = t; continue; }
+      var last = finals.length ? finals[finals.length - 1].toLowerCase() : '', tl = t.toLowerCase();
+      if (last && tl.indexOf(last) === 0) finals[finals.length - 1] = t;        // grew from the last phrase
+      else if (last && last.indexOf(tl) >= 0) { }                                // already have it
+      else finals.push(t);
+    }
+    var lastF = finals.length ? finals[finals.length - 1].toLowerCase() : '';
+    if (interim && lastF && interim.toLowerCase().indexOf(lastF) === 0) interim = interim.slice(lastF.length);
+    said = dedupe((finals.join(' ') + ' ' + interim).trim()); var l = $('live'); if (l) l.textContent = said;
+  };
   rec.onerror = function (e) { if (e.error === 'not-allowed') { close(); toast('மைக் அனுமதி தேவை (Chrome-ல் Allow அழுத்துங்கள்)'); } };
   rec.onend = function () { if (REC === rec) { REC = null; if (said) understand(said); else { close(); toast('எதுவும் கேட்கவில்லை. மீண்டும் முயற்சி செய்யுங்கள்.'); } } };
   $('ldone').onclick = function () { try { rec.stop(); } catch (e) {} };
@@ -247,20 +456,31 @@ $('cam').onchange = function () {
 var PENDING = null;
 function understand(text, image, preview) {
   busy(image ? 'பேப்பரை படிக்கிறேன்…' : 'புரிந்துகொள்கிறேன்…');
-  call('understand', text, 'amma', image || null).then(function (r) { PENDING = r; confirmSheet(r, preview); }, fail);
+  var det = DETAIL; DETAIL = null;
+  (det ? call('understandDetail', det, text, image || null) : call('understand', text, 'amma', image || null))
+    .then(function (r) { PENDING = r; confirmSheet(r, preview); }, function (e) { if (e && e.message === 'NOPARENT') { close(); toast('அந்த பதிவு இப்போது இல்லை'); load(); } else fail(e); });
 }
 function label(e) {
   if (e.type === 'cash_count') return { ic: '💰', t: 'கையில் இப்போது இருப்பது', s: 'இதுவே இனி கையிருப்பு' };
   if (e.type === 'received') return { ic: '💵', t: (e.from === 'Mathi' ? 'மதி' : e.from) + ' கொடுத்தது', s: 'கையில் பணம் கூடும்' };
-  if (e.type === 'spent') return { ic: e.icon || '🛒', t: e.item + (e.qty ? ' ' + e.qty + ' ' + (e.unit || '') : ''), s: (e.paid_by === 'son' ? 'மதி கட்டினார் · ' : e.paid_by === 'errand' ? 'அப்பா வாங்கியது · ' : '') + e.cat + (e.unsure ? ' · ❓ சரிபாருங்கள்' : '') };
-  if (e.type === 'give_errand') return { ic: '🧾', t: e.person + 'விடம் கொடுத்தது', s: e.list || 'வாங்க கொடுத்தது' };
+  if (e.type === 'spent') return { ic: e.icon || '🛒', t: e.item + (e.qty ? ' ' + e.qty + ' ' + (e.unit || '') : ''), s: (e.paid_by === 'son' ? 'மதி கட்டினார் · ' : e.paid_by === 'errand' ? errPerson(e.errand_id) + ' வாங்கியது · ' : '') + e.cat + (e.unsure ? ' · ❓ சரிபாருங்கள்' : '') };
+  if (e.type === 'give_errand') return { ic: '🧾', t: idam(e.person) + ' கொடுத்தது', s: e.list || 'வாங்க கொடுத்தது' };
   if (e.type === 'errand_return') return { ic: '↩️', t: e.person + ' திருப்பி கொடுத்தது', s: 'கொடுத்தது ' + inr(e.given) + ' · செலவு ' + inr(e.amount) };
   return { ic: '•', t: e.type, s: '' };
 }
+function restText(a, s) { var r = Math.round((a - s) * 100) / 100; return r > 0.5 ? 'இன்னும் ' + inr(r) + ' விவரம் இல்லை (பிறகு சேர்க்கலாம்)' : r < -0.5 ? '⚠️ ' + inr(-r) + ' அதிகம் – சரிபாருங்கள்' : 'முழு விவரம் ✓'; }
 function confirmSheet(r, preview) {
   var es = r.entries || [];
   var h = '<h2>சரியா?</h2>' + (preview ? '<img class="photo" src="' + preview + '">' : '<div class="said">🗣 ' + esc(r.said) + '</div>') +
     (r.reply ? '<div class="reply">' + esc(r.reply) + '</div>' : '');
+  // 📅 which day: shown big, and she can change it (for things she forgot to add)
+  var dated = es.filter(function (e) { return e.type !== 'cash_count'; }), d0 = dated.length ? dated[0].date || today() : '';
+  if (dated.length && !r.detail) {
+    var mixed = dated.some(function (e) { return (e.date || today()) !== d0; }), past = d0 !== today();
+    h += '<div style="display:flex;align-items:center;gap:8px;margin:6px 0 8px;padding:8px 12px;border-radius:12px;background:' + (past ? '#fff3c4' : '#eef5ee') + ';font-size:18px">' +
+      '<span style="flex:1">📅 <b>' + (mixed ? 'பல நாட்கள்' : esc(dayLabel(d0))) + '</b>' + (past && !mixed ? ' <small>(' + esc(d0.split('-').reverse().join('-')) + ')</small>' : '') + '</span>' +
+      '<label style="border:2px solid var(--line);border-radius:10px;padding:6px 10px;background:#fff;font-size:16px;position:relative">📅 நாள் மாற்ற<input type="date" id="cDate" max="' + today() + '" value="' + d0 + '" style="position:absolute;inset:0;opacity:0;width:100%"></label></div>';
+  }
   h += es.map(function (e, i) {
     var L = label(e), val = e.type === 'errand_return' ? e.returned : e.amount;
     return '<div class="ent' + (e.unsure ? ' unsure' : '') + '"><div class="ic">' + L.ic + '</div><div class="tx"><b>' + esc(L.t) + '</b><small>' + esc(L.s) + '</small></div>' +
@@ -269,14 +489,23 @@ function confirmSheet(r, preview) {
   var spent = es.filter(function (e) { return e.type === 'spent'; });
   if (spent.length > 1) h += '<div class="tot"><span>மொத்தம்</span><span id="ptot">' + inr(spent.reduce(function (t, e) { return t + n(e.amount); }, 0)) + '</span></div>' +
     (r.paper_total ? '<div class="eg" style="margin:4px">பேப்பரில் மொத்தம்: ' + inr(r.paper_total) + '</div>' : '');
+  if (r.detail) h += '<div class="tot" style="display:block;font-size:16px">' + esc(r.detail.name) + ' ' + inr(r.detail.amount) + ' = விவரம் <span id="dsum">' + inr(r.detail.sum) + '</span>' +
+    '<br><span id="drest" style="color:#b26a00">' + restText(r.detail.amount, r.detail.sum) + '</span></div>';
+  if (r.check) h += '<div class="tot" style="display:block;font-size:16px">' + esc(idam(r.check.person)) + ' ' + inr(r.check.given) + ' = வாங்கியது ' + inr(r.check.bought) + ' + மீதி ' + inr(r.check.returned) +
+    (r.check.rest > 0 ? '<br><span style="color:#b26a00">கணக்கில் வராதது ' + inr(r.check.rest) + ' (மற்றவை என்று சேமிக்கப்படும்)</span>' : r.check.rest === 0 ? ' ✓' : '') + '</div>';
   if (r.question) h += '<div class="q">❓ ' + esc(r.question) + '</div>';
   h += es.length ? '<div class="btns"><button class="no" data-x>வேண்டாம்</button><button class="ok" id="csave">சரி, சேமி ✓</button></div>'
     : '<div class="btns"><button class="ok" data-x>சரி</button></div>';
   sheet(h);
   if (!es.length) return;
+  if ($('cDate')) $('cDate').addEventListener('change', function () {
+    var v = this.value; if (!/^\d{4}-\d{2}-\d{2}$/.test(v) || v > today()) { toast('இன்று அல்லது முந்தைய நாள் மட்டும்'); return; }
+    es.forEach(function (e) { if (e.type !== 'cash_count') e.date = v; }); confirmSheet(Object.assign({}, r, { entries: es }), preview);
+  });
   $('sheet').addEventListener('input', function (ev) {
     var i = ev.target.dataset.i; if (i === undefined) return; var v = Number(String(ev.target.value).replace(/[^\d.]/g, '')) || 0, e = es[+i];
     if (e.type === 'errand_return') { e.returned = v; e.amount = Math.max(0, e.given - v); } else e.amount = v;
+    if (r.detail) { var sm = es.reduce(function (t, x) { return t + n(x.amount); }, 0); $('dsum').textContent = inr(sm); $('drest').innerHTML = restText(r.detail.amount, sm); }
     var pt = $('ptot'); if (pt) pt.textContent = inr(es.filter(function (x) { return x.type === 'spent'; }).reduce(function (t, x) { return t + n(x.amount); }, 0));
   });
   $('sheet').addEventListener('click', function (ev) {
@@ -286,7 +515,14 @@ function confirmSheet(r, preview) {
     var keep = es.filter(function (e) { return e.type === 'errand_return' ? true : n(e.amount) > 0; });
     if (!keep.length) { close(); return; }
     busy('சேமிக்கிறேன்…');
-    call('saveUnderstood', keep, r.said, 'amma').then(function () { close(); toast('சேமிக்கப்பட்டது ✓'); load(); }, fail);
+    if (r.detail) {
+      var sm = keep.reduce(function (t, x) { return t + n(x.amount); }, 0);
+      if (sm > r.detail.amount + 0.5) { close(); toast('விவரம் ' + inr(sm) + ' – ' + inr(r.detail.amount) + '-ஐ விட அதிகம். தொகையை சரிசெய்யுங்கள்.'); confirmSheet(Object.assign({}, r, { entries: es }), preview); return; }
+      call('saveDetail', r.detail.id, keep, r.said, r.raw || '').then(function (x) { close(); toast(x.rest ? 'சேமிக்கப்பட்டது ✓ இன்னும் ' + inr(x.rest) + ' விவரம் இல்லை' : 'சேமிக்கப்பட்டது ✓ முழு விவரம்'); load(); }, fail);
+      return;
+    }
+    var sd = (keep.filter(function (e) { return e.type !== 'cash_count'; })[0] || {}).date;
+    call('saveUnderstood', keep, r.said, 'amma', r.raw || '').then(function () { close(); toast('சேமிக்கப்பட்டது ✓' + (sd && sd !== today() ? ' – ' + dayLabel(sd) : '')); load(); }, fail);
   };
 }
 
