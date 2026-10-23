@@ -1,0 +1,311 @@
+<!doctype html>
+<html lang="ta">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#0b7a5c">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icon-192.png">
+<link rel="apple-touch-icon" href="icon-192.png">
+<title>அம்மா கணக்கு</title>
+<style>
+:root { --g: #0b7a5c; --g2: #e3f4ee; --bg: #f4f6f3; --card: #fff; --t: #1b1f1d; --m: #5f6b66; --r: #c62828; --o: #e8833a; --y: #fff4d6; --line: #e3e7e4; }
+* { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+html, body { margin: 0; background: var(--bg); color: var(--t); font: 18px/1.45 "Noto Sans Tamil", system-ui, sans-serif; }
+body { padding-bottom: env(safe-area-inset-bottom); }
+.wrap { max-width: 560px; margin: 0 auto; padding: 14px 14px 40px; }
+h1 { font-size: 22px; margin: 4px 0 12px; display: flex; align-items: center; gap: 8px; }
+h1 small { margin-left: auto; font-size: 13px; font-weight: 400; color: var(--m); }
+.card { background: var(--card); border-radius: 18px; padding: 16px; margin-bottom: 12px; box-shadow: 0 1px 3px rgba(0,0,0,.06); }
+.hero { background: linear-gradient(135deg, #0b7a5c, #12a07a); color: #fff; }
+.hero .k { opacity: .9; font-size: 16px; }
+.hero .big { font-size: 44px; font-weight: 800; letter-spacing: -.5px; margin: 2px 0 6px; }
+.hero .row { display: flex; gap: 8px; font-size: 14px; }
+.hero .row div { flex: 1; background: rgba(255,255,255,.16); border-radius: 12px; padding: 8px 10px; }
+.hero .row b { display: block; font-size: 17px; }
+.acts { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; margin-bottom: 12px; }
+.act { border: 0; border-radius: 18px; padding: 16px 6px; font: inherit; font-weight: 700; color: #fff; display: flex; flex-direction: column; align-items: center; gap: 6px; cursor: pointer; }
+.act .i { font-size: 34px; line-height: 1; }
+.act.mic { background: #c62828; } .act.type { background: #1565c0; } .act.cam { background: #6a1b9a; }
+.act span { font-size: 15px; }
+.typebox { display: none; gap: 8px; margin-bottom: 12px; }
+.typebox.on { display: flex; }
+.typebox textarea { flex: 1; font: inherit; border: 2px solid var(--line); border-radius: 14px; padding: 10px 12px; min-height: 52px; resize: none; }
+.typebox button { border: 0; background: var(--g); color: #fff; font: inherit; font-weight: 700; border-radius: 14px; padding: 0 18px; }
+.eg { font-size: 14px; color: var(--m); margin: -4px 4px 12px; }
+.errand { background: var(--y); border: 2px solid #f1c75b; }
+.errand .t { font-weight: 700; }
+.errand .r { display: flex; gap: 8px; margin-top: 10px; }
+.errand input { flex: 1; font: inherit; font-size: 20px; border: 2px solid #e8c56a; border-radius: 12px; padding: 8px 12px; width: 100%; }
+.errand button { border: 0; background: var(--g); color: #fff; font: inherit; font-weight: 700; border-radius: 12px; padding: 0 16px; }
+.sec { font-size: 15px; color: var(--m); margin: 16px 4px 8px; display: flex; }
+.sec a { margin-left: auto; color: var(--g); text-decoration: none; }
+.li { display: flex; align-items: center; gap: 12px; padding: 12px 4px; border-bottom: 1px solid var(--line); }
+.li:last-child { border-bottom: 0; }
+.li .ic { font-size: 26px; width: 40px; height: 40px; display: grid; place-items: center; background: var(--g2); border-radius: 12px; flex: none; }
+.li .tx { flex: 1; min-width: 0; }
+.li .tx b { display: block; font-size: 17px; font-weight: 600; }
+.li .tx small { color: var(--m); font-size: 13px; }
+.li .a { font-weight: 800; font-size: 18px; white-space: nowrap; }
+.a.in { color: var(--g); } .a.out { color: var(--t); }
+.empty { color: var(--m); text-align: center; padding: 14px; font-size: 15px; }
+/* sheets */
+.sheet { position: fixed; inset: 0; background: rgba(0,0,0,.45); display: flex; align-items: flex-end; justify-content: center; z-index: 20; }
+.sheet .pane { background: #fff; width: 100%; max-width: 560px; border-radius: 22px 22px 0 0; padding: 18px 16px calc(18px + env(safe-area-inset-bottom)); max-height: 92vh; overflow: auto; }
+.pane h2 { margin: 0 0 6px; font-size: 21px; }
+.said { background: var(--bg); border-radius: 12px; padding: 10px 12px; font-size: 15px; color: var(--m); margin-bottom: 10px; }
+.reply { font-weight: 600; margin: 6px 0 10px; }
+.ent { display: flex; align-items: center; gap: 10px; padding: 10px; border: 2px solid var(--line); border-radius: 14px; margin-bottom: 8px; }
+.ent.unsure { border-color: #f1c75b; background: #fffaf0; }
+.ent .ic { font-size: 26px; }
+.ent .tx { flex: 1; min-width: 0; }
+.ent .tx b { display: block; }
+.ent .tx small { color: var(--m); font-size: 13px; }
+.ent input { width: 100px; font: inherit; font-weight: 800; font-size: 20px; text-align: right; border: 2px solid var(--line); border-radius: 10px; padding: 6px 8px; }
+.ent .x { border: 0; background: none; font-size: 22px; color: var(--m); padding: 4px; }
+.q { background: #fff4e5; border-radius: 12px; padding: 10px 12px; color: #8a4b00; margin: 8px 0; }
+.btns { display: flex; gap: 10px; margin-top: 14px; }
+.btns button { flex: 1; border: 0; border-radius: 16px; padding: 16px; font: inherit; font-weight: 800; font-size: 19px; }
+.ok { background: var(--g); color: #fff; } .no { background: #e9ecea; color: var(--t); }
+.listen .pulse { width: 120px; height: 120px; margin: 18px auto; border-radius: 50%; background: #c62828; display: grid; place-items: center; font-size: 54px; animation: p 1.2s infinite; }
+@keyframes p { 0% { box-shadow: 0 0 0 0 rgba(198,40,40,.5); } 70% { box-shadow: 0 0 0 26px rgba(198,40,40,0); } 100% { box-shadow: 0 0 0 0 rgba(198,40,40,0); } }
+.live { text-align: center; min-height: 54px; font-size: 19px; }
+.toast { position: fixed; left: 50%; top: 16px; transform: translateX(-50%); background: #1b1f1d; color: #fff; padding: 12px 18px; border-radius: 14px; z-index: 40; font-size: 16px; max-width: 90%; text-align: center; }
+.busy { text-align: center; padding: 26px; font-size: 18px; }
+.spin { width: 38px; height: 38px; border: 4px solid var(--g2); border-top-color: var(--g); border-radius: 50%; margin: 0 auto 10px; animation: s 0.9s linear infinite; }
+@keyframes s { to { transform: rotate(360deg); } }
+.login { text-align: center; padding-top: 12vh; }
+.login input { font: inherit; font-size: 26px; text-align: center; border: 2px solid var(--line); border-radius: 14px; padding: 12px; width: 220px; margin: 14px 0; letter-spacing: 6px; }
+.login button { border: 0; background: var(--g); color: #fff; font: inherit; font-weight: 800; border-radius: 14px; padding: 14px 40px; font-size: 20px; }
+.err { color: var(--r); min-height: 24px; }
+.photo { width: 100%; max-height: 180px; object-fit: contain; border-radius: 12px; background: var(--bg); margin-bottom: 8px; }
+.tot { display: flex; justify-content: space-between; font-weight: 800; padding: 8px 4px 0; }
+</style>
+</head>
+<body>
+<div class="wrap" id="app"></div>
+<input type="file" id="cam" accept="image/*" capture="environment" hidden>
+<script>
+var API = '', TOKEN = '', D = null;
+var MN = ['ஜனவரி', 'பிப்ரவரி', 'மார்ச்', 'ஏப்ரல்', 'மே', 'ஜூன்', 'ஜூலை', 'ஆகஸ்ட்', 'செப்டம்பர்', 'அக்டோபர்', 'நவம்பர்', 'டிசம்பர்'];
+function $(id) { return document.getElementById(id); }
+function esc(s) { return String(s == null ? '' : s).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); }
+function n(v) { return Number(v) || 0; }
+function inr(v) { var x = Math.round(Math.abs(n(v))); return (n(v) < 0 ? '−' : '') + '₹' + x.toLocaleString('en-IN'); }
+function ls(k, v) { try { if (v === undefined) return localStorage.getItem(k); if (v === null) localStorage.removeItem(k); else localStorage.setItem(k, v); } catch (e) { return null; } }
+function toast(t) { var d = document.createElement('div'); d.className = 'toast'; d.textContent = t; document.body.appendChild(d); setTimeout(function () { d.remove(); }, 3200); }
+function today() { var d = new Date(); return d.getFullYear() + '-' + ('0' + (d.getMonth() + 1)).slice(-2) + '-' + ('0' + d.getDate()).slice(-2); }
+function dayLabel(s) { var t = today(), y = new Date(); y.setDate(y.getDate() - 1); var ys = y.getFullYear() + '-' + ('0' + (y.getMonth() + 1)).slice(-2) + '-' + ('0' + y.getDate()).slice(-2); if (s === t) return 'இன்று'; if (s === ys) return 'நேற்று'; var p = String(s).split('-'); return +p[2] + ' ' + (MN[+p[1] - 1] || '').slice(0, 4); }
+
+/* ---------- server ---------- */
+function post(body) {
+  return fetch(API, { method: 'POST', headers: { 'Content-Type': 'text/plain;charset=utf-8' }, body: JSON.stringify(body) })
+    .then(function (r) { return r.json(); });
+}
+function call(fn) {
+  var args = [].slice.call(arguments, 1);
+  return post({ action: 'call', token: TOKEN, fn: fn, args: args }).then(function (r) {
+    if (!r.ok && r.error === 'AUTH') { ls('amma_token', null); TOKEN = ''; showLogin('மீண்டும் PIN போடுங்கள்'); throw new Error('AUTH'); }
+    if (!r.ok) throw new Error(r.error || 'error');
+    return r.result;
+  });
+}
+function load() {
+  return call('getAll').then(function (d) { D = d; ls('amma_cache', JSON.stringify(d)); render(); })
+    .catch(function (e) { if (e.message !== 'AUTH') { if (!D) { try { D = JSON.parse(ls('amma_cache') || 'null'); } catch (x) {} } if (D) render(); toast('இணையம் இல்லை – பழைய தகவல் காட்டப்படுகிறது'); } });
+}
+
+/* ---------- numbers ---------- */
+function calc() {
+  var m = today().slice(0, 7);
+  var received = D.Cash.reduce(function (t, c) { return t + n(c.Amount); }, 0);
+  var spentMine = D.Purchases.filter(function (p) { return !p.PaidBy || p.PaidBy === 'amma'; }).reduce(function (t, p) { return t + n(p.Amount); }, 0);
+  var given = (D.Errands || []).reduce(function (t, e) { return t + n(e.Given); }, 0);
+  var back = (D.Errands || []).reduce(function (t, e) { return t + n(e.Returned); }, 0);
+  var monthIn = D.Cash.filter(function (c) { return c.Month === m && n(c.Amount) > 0; }).reduce(function (t, c) { return t + n(c.Amount); }, 0);
+  var monthOut = D.Purchases.filter(function (p) { return p.Month === m; }).reduce(function (t, p) { return t + n(p.Amount); }, 0);
+  var outAppa = (D.Errands || []).filter(function (e) { return e.Status !== 'closed'; }).reduce(function (t, e) { return t + n(e.Given); }, 0);
+  return { cash: received - spentMine - given + back, monthIn: monthIn, monthOut: monthOut, outAppa: outAppa, m: m };
+}
+function entries(limitDays) {
+  var out = [], from = new Date(); from.setDate(from.getDate() - (limitDays || 2));
+  var fs = from.toISOString().slice(0, 10);
+  D.Cash.forEach(function (c) { if (c.Date >= fs) out.push({ t: 'Cash', id: c.ID, date: c.Date, at: c.CreatedAt, ic: '💵', title: (/^mathi$/i.test(c.From || '') ? 'மதி' : (c.From || 'பணம்')) + ' கொடுத்தது', sub: c.Note && c.Note.indexOf('கொடுத்தது') < 0 ? c.Note : '', amt: n(c.Amount), cls: 'in', sign: '+' }); });
+  D.Purchases.forEach(function (p) { if (p.Date >= fs && p.ItemID !== 'errand') out.push({ t: 'Purchases', id: p.ID, date: p.Date, at: p.CreatedAt, ic: icon(p.ItemID), title: p.Name + (p.Qty ? ' ' + p.Qty + ' ' + (p.Unit || '') : ''), sub: p.PaidBy === 'son' ? 'மதி கட்டினார்' : p.PaidBy === 'errand' ? 'அப்பா வாங்கியது' : '', amt: n(p.Amount), cls: 'out', sign: '' }); });
+  (D.Errands || []).forEach(function (e) { if (e.Date >= fs || (e.ReturnedOn || '') >= fs) out.push({ t: 'Errands', id: e.ID, date: e.ReturnedOn || e.Date, at: e.CreatedAt, ic: '🧾', title: e.Person + 'விடம் கொடுத்தது' + (e.List ? ' – ' + e.List : ''), sub: e.Status === 'closed' ? 'திரும்ப ' + inr(e.Returned) + ' · செலவு ' + inr(e.Spent) : 'இன்னும் மீதி வரவில்லை', amt: n(e.Given), cls: 'out', sign: '' }); });
+  return out.sort(function (a, b) { return String(b.date).localeCompare(String(a.date)) || String(b.at).localeCompare(String(a.at)); });
+}
+function icon(id) { var it = (D.Items || []).find(function (i) { return i.ID === id; }); return it && it.Icon ? it.Icon : '🛍️'; }
+
+/* ---------- home ---------- */
+function render() {
+  if (!D) return;
+  var c = calc(), open = (D.Errands || []).filter(function (e) { return e.Status !== 'closed'; });
+  var h = '<h1>அம்மா கணக்கு <small>' + dayLabel(today()) + '</small></h1>' +
+    '<div class="card hero"><div class="k">கையில் உள்ள பணம்</div><div class="big">' + inr(c.cash) + '</div>' +
+    '<div class="row"><div>' + (MN[+c.m.slice(5) - 1] || '') + ' வந்தது<b>' + inr(c.monthIn) + '</b></div><div>இந்த மாத செலவு<b>' + inr(c.monthOut) + '</b></div>' +
+    (c.outAppa ? '<div>அப்பாவிடம்<b>' + inr(c.outAppa) + '</b></div>' : '') + '</div></div>' +
+    '<div class="acts"><button class="act mic" id="bMic"><span class="i">🎤</span><span>பேசுங்கள்</span></button>' +
+    '<button class="act type" id="bType"><span class="i">✍️</span><span>எழுதுங்கள்</span></button>' +
+    '<button class="act cam" id="bCam"><span class="i">📷</span><span>பேப்பர்</span></button></div>' +
+    '<div class="typebox" id="tbox"><textarea id="tin" rows="2" placeholder="எ.கா. 500 rs 1 kg mutton vaanginen"></textarea><button id="tgo">சரி</button></div>' +
+    '<div class="eg">எ.கா: "மதி 5000 கொடுத்தான்" · "250 காய்கறி வாங்கினேன்" · "அப்பா கிட்ட 1000 கொடுத்தேன் மளிகை வாங்க" · "அப்பா 320 திருப்பி கொடுத்தார்"</div>';
+  open.forEach(function (e) {
+    h += '<div class="card errand"><div class="t">🧾 ' + esc(e.Person) + 'விடம் ' + inr(e.Given) + ' கொடுத்தீர்கள் (' + dayLabel(e.Date) + ')' + (e.List ? ' – ' + esc(e.List) : '') + '</div>' +
+      '<div style="font-size:15px;margin-top:4px">மீதி எவ்வளவு திரும்ப வந்தது?</div>' +
+      '<div class="r"><input inputmode="numeric" placeholder="₹ மீதி" data-back="' + e.ID + '"><button data-close="' + e.ID + '">சரி</button></div></div>';
+  });
+  var list = entries(2);
+  h += '<div class="sec">இன்றும் நேற்றும்</div><div class="card" style="padding:4px 12px">' + (list.length ? list.map(function (x) {
+    return '<div class="li" data-del="' + x.t + ':' + x.id + '"><div class="ic">' + x.ic + '</div><div class="tx"><b>' + esc(x.title) + '</b><small>' + dayLabel(x.date) + (x.sub ? ' · ' + esc(x.sub) : '') + '</small></div><div class="a ' + x.cls + '">' + x.sign + inr(x.amt) + '</div></div>';
+  }).join('') : '<div class="empty">இன்னும் எதுவும் இல்லை. மேலே 🎤 அழுத்தி சொல்லுங்கள்.</div>') + '</div>' +
+    (D.aiReady ? '' : '<div class="eg">⚠️ AI இன்னும் அமைக்கப்படவில்லை – எளிய வாக்கியங்கள் மட்டும் புரியும் (மதியிடம் சொல்லுங்கள்).</div>');
+  $('app').innerHTML = h;
+  $('bMic').onclick = listen;
+  $('bType').onclick = function () { $('tbox').classList.toggle('on'); if ($('tbox').classList.contains('on')) $('tin').focus(); };
+  $('tgo').onclick = function () { var t = $('tin').value.trim(); if (t) { $('tin').value = ''; $('tbox').classList.remove('on'); understand(t); } };
+  $('bCam').onclick = function () { $('cam').value = ''; $('cam').click(); };
+}
+document.addEventListener('click', function (ev) {
+  var c = ev.target.closest('[data-close]');
+  if (c) {
+    var inp = document.querySelector('[data-back="' + c.dataset.close + '"]'), v = String(inp.value).replace(/[^\d.]/g, '');
+    if (v === '') { toast('திரும்ப வந்த தொகையை போடுங்கள் (எதுவும் இல்லை என்றால் 0)'); return; }
+    busy('சேமிக்கிறேன்…');
+    call('closeErrand', c.dataset.close, Number(v)).then(function (r) { close(); toast('சரி ✓ அப்பா செலவு ' + inr(r.spent)); load(); }, fail);
+    return;
+  }
+  var d = ev.target.closest('[data-del]');
+  if (d) {
+    var p = d.dataset.del.split(':');
+    sheet('<h2>இதை நீக்கவா?</h2><div class="said">' + esc(d.querySelector('b').textContent) + ' · ' + esc(d.querySelector('.a').textContent) + '</div>' +
+      '<div class="btns"><button class="no" data-x>வேண்டாம்</button><button class="ok" id="dyes" style="background:#c62828">நீக்கு</button></div>');
+    $('dyes').onclick = function () { busy('நீக்குகிறேன்…'); call('removeEntry', p[0], p[1]).then(function () { close(); toast('நீக்கப்பட்டது'); load(); }, fail); };
+  }
+  if (ev.target.closest('[data-x]')) close();
+});
+
+/* ---------- sheet helpers ---------- */
+function sheet(html) { close(); var s = document.createElement('div'); s.className = 'sheet'; s.id = 'sheet'; s.innerHTML = '<div class="pane">' + html + '</div>'; s.onclick = function (e) { if (e.target === s) close(); }; document.body.appendChild(s); }
+function close() { var s = $('sheet'); if (s) s.remove(); if (REC) { try { REC.abort(); } catch (e) {} REC = null; } }
+function busy(t) { sheet('<div class="busy"><div class="spin"></div>' + esc(t) + '</div>'); }
+function fail(e) {
+  var m = String(e && e.message || e);
+  close();
+  if (m === 'AUTH') return;
+  toast(m === 'NOAI' ? 'பேப்பர் படிக்க AI தேவை – மதியிடம் சொல்லுங்கள்' : m === 'AIFAIL' ? 'படம் படிக்க முடியவில்லை. தெளிவாக மீண்டும் எடுங்கள்.' : /Failed to fetch|NetworkError/i.test(m) ? 'இணையம் இல்லை. பிறகு முயற்சி செய்யுங்கள்.' : 'பிழை: ' + m);
+}
+
+/* ---------- voice ---------- */
+var REC = null;
+function listen() {
+  var SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+  if (!SR) { $('tbox').classList.add('on'); $('tin').focus(); toast('இந்த போனில் பேச்சு வசதி இல்லை – எழுதுங்கள்'); return; }
+  sheet('<div class="listen"><h2 style="text-align:center">சொல்லுங்கள்…</h2><div class="pulse">🎤</div><div class="live" id="live">கேட்கிறேன்</div>' +
+    '<div class="btns"><button class="no" data-x>நிறுத்து</button><button class="ok" id="ldone">முடிந்தது</button></div></div>');
+  var said = '', rec = new SR(); REC = rec;
+  rec.lang = 'ta-IN'; rec.interimResults = true; rec.continuous = true;
+  rec.onresult = function (e) { var t = ''; for (var i = 0; i < e.results.length; i++) t += e.results[i][0].transcript + ' '; said = t.trim(); var l = $('live'); if (l) l.textContent = said; };
+  rec.onerror = function (e) { if (e.error === 'not-allowed') { close(); toast('மைக் அனுமதி தேவை (Chrome-ல் Allow அழுத்துங்கள்)'); } };
+  rec.onend = function () { if (REC === rec) { REC = null; if (said) understand(said); else { close(); toast('எதுவும் கேட்கவில்லை. மீண்டும் முயற்சி செய்யுங்கள்.'); } } };
+  $('ldone').onclick = function () { try { rec.stop(); } catch (e) {} };
+  try { rec.start(); } catch (e) { close(); toast('மைக் தொடங்க முடியவில்லை'); }
+}
+
+/* ---------- photo of a paper list ---------- */
+$('cam').onchange = function () {
+  var f = this.files && this.files[0]; if (!f) return;
+  busy('பேப்பரை படிக்கிறேன்…');
+  var img = new Image(), url = URL.createObjectURL(f);
+  img.onload = function () {
+    var max = 1600, w = img.width, h = img.height, k = Math.min(1, max / Math.max(w, h));
+    var c = document.createElement('canvas'); c.width = Math.round(w * k); c.height = Math.round(h * k);
+    c.getContext('2d').drawImage(img, 0, 0, c.width, c.height);
+    var data = c.toDataURL('image/jpeg', 0.82); URL.revokeObjectURL(url);
+    understand('', { data: data.split(',')[1], type: 'image/jpeg' }, data);
+  };
+  img.onerror = function () { close(); toast('படம் திறக்க முடியவில்லை'); };
+  img.src = url;
+};
+
+/* ---------- understand → confirm → save ---------- */
+var PENDING = null;
+function understand(text, image, preview) {
+  busy(image ? 'பேப்பரை படிக்கிறேன்…' : 'புரிந்துகொள்கிறேன்…');
+  call('understand', text, 'amma', image || null).then(function (r) { PENDING = r; confirmSheet(r, preview); }, fail);
+}
+function label(e) {
+  if (e.type === 'received') return { ic: '💵', t: (e.from === 'Mathi' ? 'மதி' : e.from) + ' கொடுத்தது', s: 'கையில் பணம் கூடும்' };
+  if (e.type === 'spent') return { ic: e.icon || '🛒', t: e.item + (e.qty ? ' ' + e.qty + ' ' + (e.unit || '') : ''), s: (e.paid_by === 'son' ? 'மதி கட்டினார் · ' : e.paid_by === 'errand' ? 'அப்பா வாங்கியது · ' : '') + e.cat + (e.unsure ? ' · ❓ சரிபாருங்கள்' : '') };
+  if (e.type === 'give_errand') return { ic: '🧾', t: e.person + 'விடம் கொடுத்தது', s: e.list || 'வாங்க கொடுத்தது' };
+  if (e.type === 'errand_return') return { ic: '↩️', t: e.person + ' திருப்பி கொடுத்தது', s: 'கொடுத்தது ' + inr(e.given) + ' · செலவு ' + inr(e.amount) };
+  return { ic: '•', t: e.type, s: '' };
+}
+function confirmSheet(r, preview) {
+  var es = r.entries || [];
+  var h = '<h2>சரியா?</h2>' + (preview ? '<img class="photo" src="' + preview + '">' : '<div class="said">🗣 ' + esc(r.said) + '</div>') +
+    (r.reply ? '<div class="reply">' + esc(r.reply) + '</div>' : '');
+  h += es.map(function (e, i) {
+    var L = label(e), val = e.type === 'errand_return' ? e.returned : e.amount;
+    return '<div class="ent' + (e.unsure ? ' unsure' : '') + '"><div class="ic">' + L.ic + '</div><div class="tx"><b>' + esc(L.t) + '</b><small>' + esc(L.s) + '</small></div>' +
+      '<input inputmode="numeric" value="' + val + '" data-i="' + i + '"><button class="x" data-rm="' + i + '">✕</button></div>';
+  }).join('');
+  var spent = es.filter(function (e) { return e.type === 'spent'; });
+  if (spent.length > 1) h += '<div class="tot"><span>மொத்தம்</span><span id="ptot">' + inr(spent.reduce(function (t, e) { return t + n(e.amount); }, 0)) + '</span></div>' +
+    (r.paper_total ? '<div class="eg" style="margin:4px">பேப்பரில் மொத்தம்: ' + inr(r.paper_total) + '</div>' : '');
+  if (r.question) h += '<div class="q">❓ ' + esc(r.question) + '</div>';
+  h += es.length ? '<div class="btns"><button class="no" data-x>வேண்டாம்</button><button class="ok" id="csave">சரி, சேமி ✓</button></div>'
+    : '<div class="btns"><button class="ok" data-x>சரி</button></div>';
+  sheet(h);
+  if (!es.length) return;
+  $('sheet').addEventListener('input', function (ev) {
+    var i = ev.target.dataset.i; if (i === undefined) return; var v = Number(String(ev.target.value).replace(/[^\d.]/g, '')) || 0, e = es[+i];
+    if (e.type === 'errand_return') { e.returned = v; e.amount = Math.max(0, e.given - v); } else e.amount = v;
+    var pt = $('ptot'); if (pt) pt.textContent = inr(es.filter(function (x) { return x.type === 'spent'; }).reduce(function (t, x) { return t + n(x.amount); }, 0));
+  });
+  $('sheet').addEventListener('click', function (ev) {
+    var x = ev.target.closest('[data-rm]'); if (!x) return; es.splice(+x.dataset.rm, 1); confirmSheet(Object.assign({}, r, { entries: es }), preview);
+  });
+  $('csave').onclick = function () {
+    var keep = es.filter(function (e) { return e.type === 'errand_return' ? true : n(e.amount) > 0; });
+    if (!keep.length) { close(); return; }
+    busy('சேமிக்கிறேன்…');
+    call('saveUnderstood', keep, r.said, 'amma').then(function () { close(); toast('சேமிக்கப்பட்டது ✓'); load(); }, fail);
+  };
+}
+
+/* ---------- login ---------- */
+function showLogin(msg) {
+  $('app').innerHTML = '<div class="login"><div style="font-size:60px">🪔</div><h1 style="justify-content:center">அம்மா கணக்கு</h1>' +
+    (API ? '' : '<input id="lapi" placeholder="Web app link" style="letter-spacing:0;font-size:14px;width:90%">') +
+    '<div><input id="lpin" type="password" inputmode="numeric" placeholder="PIN"></div><div class="err" id="lerr">' + esc(msg || '') + '</div><button id="lgo">திற</button></div>';
+  $('lgo').onclick = function () {
+    if (!API) {
+      var u = ($('lapi').value || '').trim();
+      if (!/^https:\/\/script\.google\.com\/macros\/s\/.+\/exec$/.test(u)) { $('lerr').textContent = 'Web app link சரியில்லை (…/exec என்று முடிய வேண்டும்)'; return; }
+      API = u; ls('amma_api', API);
+    }
+    post({ action: 'login', pin: $('lpin').value }).then(function (r) {
+      if (!r.ok) { $('lerr').textContent = r.error === 'WRONGPIN' ? 'PIN தவறு' : r.error === 'LOCKED' ? '15 நிமிடம் கழித்து முயற்சி செய்யுங்கள்' : r.error; return; }
+      TOKEN = r.token; ls('amma_token', TOKEN); load();
+    }, function () { $('lerr').textContent = 'இணையம் இல்லை அல்லது link தவறு'; API = ''; ls('amma_api', null); showLogin('இணையம் இல்லை அல்லது link தவறு – link-ஐ மீண்டும் போடுங்கள்'); });
+  };
+}
+(function start() {
+  var m = location.hash.match(/api=([^&]+)/);
+  if (m) { ls('amma_api', decodeURIComponent(m[1])); history.replaceState(null, '', location.pathname); }
+  // the earlier version stored the link and login as ab_api / ab_tok: carry them over, no new login needed
+  if (!ls('amma_api') && ls('ab_api')) ls('amma_api', ls('ab_api'));
+  if (!ls('amma_token') && ls('ab_tok')) ls('amma_token', ls('ab_tok'));
+  API = ls('amma_api') || ''; TOKEN = ls('amma_token') || '';
+  if (!API || !TOKEN) return showLogin();
+  try { D = JSON.parse(ls('amma_cache') || 'null'); } catch (e) {}
+  if (D) render(); else $('app').innerHTML = '<div class="busy"><div class="spin"></div>திறக்கிறது…</div>';
+  load();
+  window.addEventListener('popstate', close);
+  document.addEventListener('visibilitychange', function () { if (!document.hidden && TOKEN) load(); });
+})();
+if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js').catch(function () {});
+</script>
+</body>
+</html>
