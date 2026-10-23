@@ -122,7 +122,7 @@ function calc() {
   var spentMine = D.Purchases.filter(function (p) { return !p.PaidBy || p.PaidBy === 'amma'; }).reduce(function (t, p) { return t + n(p.Amount); }, 0);
   var given = (D.Errands || []).reduce(function (t, e) { return t + n(e.Given); }, 0);
   var back = (D.Errands || []).reduce(function (t, e) { return t + n(e.Returned); }, 0);
-  var monthIn = D.Cash.filter(function (c) { return c.Month === m && n(c.Amount) > 0; }).reduce(function (t, c) { return t + n(c.Amount); }, 0);
+  var monthIn = D.Cash.filter(function (c) { return c.Month === m && n(c.Amount) > 0 && c.Kind !== 'count'; }).reduce(function (t, c) { return t + n(c.Amount); }, 0);
   var monthOut = D.Purchases.filter(function (p) { return p.Month === m; }).reduce(function (t, p) { return t + n(p.Amount); }, 0);
   var outAppa = (D.Errands || []).filter(function (e) { return e.Status !== 'closed'; }).reduce(function (t, e) { return t + n(e.Given); }, 0);
   return { cash: received - spentMine - given + back, monthIn: monthIn, monthOut: monthOut, outAppa: outAppa, m: m };
@@ -130,7 +130,8 @@ function calc() {
 function entries(limitDays) {
   var out = [], from = new Date(); from.setDate(from.getDate() - (limitDays || 2));
   var fs = from.toISOString().slice(0, 10);
-  D.Cash.forEach(function (c) { if (c.Date >= fs) out.push({ t: 'Cash', id: c.ID, date: c.Date, at: c.CreatedAt, ic: '💵', title: (/^mathi$/i.test(c.From || '') ? 'மதி' : (c.From || 'பணம்')) + ' கொடுத்தது', sub: c.Note && c.Note.indexOf('கொடுத்தது') < 0 ? c.Note : '', amt: n(c.Amount), cls: 'in', sign: '+' }); });
+  D.Cash.forEach(function (c) { if (c.Date >= fs && c.Kind === 'count') { out.push({ t: 'Cash', id: c.ID, date: c.Date, at: c.CreatedAt, ic: '💰', title: (String(c.Note || '').match(/கையில் எண்ணியது ₹[\d.]+/) || ['கையில் எண்ணியது'])[0], sub: n(c.Amount) < 0 ? 'பதிவு செய்யாத செலவு ' + inr(-n(c.Amount)) : 'கூடுதல் ' + inr(c.Amount), amt: Math.abs(n(c.Amount)), cls: n(c.Amount) < 0 ? 'out' : 'in', sign: n(c.Amount) < 0 ? '' : '+' }); return; }
+    if (c.Date >= fs) out.push({ t: 'Cash', id: c.ID, date: c.Date, at: c.CreatedAt, ic: '💵', title: (/^mathi$/i.test(c.From || '') ? 'மதி' : (c.From || 'பணம்')) + ' கொடுத்தது', sub: c.Note && c.Note.indexOf('கொடுத்தது') < 0 ? c.Note : '', amt: n(c.Amount), cls: 'in', sign: '+' }); });
   D.Purchases.forEach(function (p) { if (p.Date >= fs && p.ItemID !== 'errand') out.push({ t: 'Purchases', id: p.ID, date: p.Date, at: p.CreatedAt, ic: icon(p.ItemID), title: p.Name + (p.Qty ? ' ' + p.Qty + ' ' + (p.Unit || '') : ''), sub: p.PaidBy === 'son' ? 'மதி கட்டினார்' : p.PaidBy === 'errand' ? 'அப்பா வாங்கியது' : '', amt: n(p.Amount), cls: 'out', sign: '' }); });
   (D.Errands || []).forEach(function (e) { if (e.Date >= fs || (e.ReturnedOn || '') >= fs) out.push({ t: 'Errands', id: e.ID, date: e.ReturnedOn || e.Date, at: e.CreatedAt, ic: '🧾', title: e.Person + 'விடம் கொடுத்தது' + (e.List ? ' – ' + e.List : ''), sub: e.Status === 'closed' ? 'திரும்ப ' + inr(e.Returned) + ' · செலவு ' + inr(e.Spent) : 'இன்னும் மீதி வரவில்லை', amt: n(e.Given), cls: 'out', sign: '' }); });
   return out.sort(function (a, b) { return String(b.date).localeCompare(String(a.date)) || String(b.at).localeCompare(String(a.at)); });
@@ -142,7 +143,8 @@ function render() {
   if (!D) return;
   var c = calc(), open = (D.Errands || []).filter(function (e) { return e.Status !== 'closed'; });
   var h = '<h1>அம்மா கணக்கு <small>' + dayLabel(today()) + '</small></h1>' +
-    '<div class="card hero"><div class="k">கையில் உள்ள பணம்</div><div class="big">' + inr(c.cash) + '</div>' +
+    (D.Cash.some(function (x) { return x.Kind === 'count'; }) ? '' : '<div class="card errand"><div class="t">💰 முதலில்: இப்போது கையில் எவ்வளவு பணம் இருக்கு?</div><div style="font-size:15px;margin-top:4px">எண்ணி போடுங்கள் – இன்று முதல் கணக்கு சரியாக இருக்கும்.</div><div class="r"><input inputmode="numeric" placeholder="₹ கையில் உள்ளது" id="cnt0"><button id="cntgo">சரி</button></div></div>') +
+    '<div class="card hero" id="hero"><div class="k">கையில் உள்ள பணம் <span style="font-size:13px;opacity:.8">(தொட்டு சரிசெய்யலாம்)</span></div><div class="big">' + inr(c.cash) + '</div>' +
     '<div class="row"><div>' + (MN[+c.m.slice(5) - 1] || '') + ' வந்தது<b>' + inr(c.monthIn) + '</b></div><div>இந்த மாத செலவு<b>' + inr(c.monthOut) + '</b></div>' +
     (c.outAppa ? '<div>அப்பாவிடம்<b>' + inr(c.outAppa) + '</b></div>' : '') + '</div></div>' +
     '<div class="acts"><button class="act mic" id="bMic"><span class="i">🎤</span><span>பேசுங்கள்</span></button>' +
@@ -162,6 +164,13 @@ function render() {
     (D.aiReady ? '' : '<div class="eg">⚠️ AI இன்னும் அமைக்கப்படவில்லை – எளிய வாக்கியங்கள் மட்டும் புரியும் (மதியிடம் சொல்லுங்கள்).</div>');
   $('app').innerHTML = h;
   $('bMic').onclick = listen;
+  if ($('cntgo')) $('cntgo').onclick = function () { setCash($('cnt0').value); };
+  $('hero').onclick = function () {
+    sheet('<h2>கையில் இப்போது எவ்வளவு இருக்கு?</h2><div class="said">எண்ணி பார்த்து போடுங்கள். இதுவே இனி கையிருப்பு.</div>' +
+      '<input id="cnt1" inputmode="numeric" placeholder="₹" style="width:100%;font:inherit;font-size:28px;font-weight:800;text-align:center;border:2px solid var(--line);border-radius:14px;padding:12px">' +
+      '<div class="btns"><button class="no" data-x>வேண்டாம்</button><button class="ok" id="cnt1go">சரி ✓</button></div>');
+    $('cnt1').focus(); $('cnt1go').onclick = function () { setCash($('cnt1').value); };
+  };
   $('bType').onclick = function () { $('tbox').classList.toggle('on'); if ($('tbox').classList.contains('on')) $('tin').focus(); };
   $('tgo').onclick = function () { var t = $('tin').value.trim(); if (t) { $('tin').value = ''; $('tbox').classList.remove('on'); understand(t); } };
   $('bCam').onclick = function () { $('cam').value = ''; $('cam').click(); };
@@ -184,6 +193,12 @@ document.addEventListener('click', function (ev) {
   }
   if (ev.target.closest('[data-x]')) close();
 });
+
+function setCash(v) {
+  v = String(v || '').replace(/[^\d.]/g, ''); if (v === '') { toast('தொகையை போடுங்கள்'); return; }
+  busy('சேமிக்கிறேன்…');
+  call('setCashInHand', Number(v)).then(function () { close(); toast('கையிருப்பு ' + inr(v) + ' ✓'); load(); }, fail);
+}
 
 /* ---------- sheet helpers ---------- */
 function sheet(html) { close(); var s = document.createElement('div'); s.className = 'sheet'; s.id = 'sheet'; s.innerHTML = '<div class="pane">' + html + '</div>'; s.onclick = function (e) { if (e.target === s) close(); }; document.body.appendChild(s); }
@@ -235,6 +250,7 @@ function understand(text, image, preview) {
   call('understand', text, 'amma', image || null).then(function (r) { PENDING = r; confirmSheet(r, preview); }, fail);
 }
 function label(e) {
+  if (e.type === 'cash_count') return { ic: '💰', t: 'கையில் இப்போது இருப்பது', s: 'இதுவே இனி கையிருப்பு' };
   if (e.type === 'received') return { ic: '💵', t: (e.from === 'Mathi' ? 'மதி' : e.from) + ' கொடுத்தது', s: 'கையில் பணம் கூடும்' };
   if (e.type === 'spent') return { ic: e.icon || '🛒', t: e.item + (e.qty ? ' ' + e.qty + ' ' + (e.unit || '') : ''), s: (e.paid_by === 'son' ? 'மதி கட்டினார் · ' : e.paid_by === 'errand' ? 'அப்பா வாங்கியது · ' : '') + e.cat + (e.unsure ? ' · ❓ சரிபாருங்கள்' : '') };
   if (e.type === 'give_errand') return { ic: '🧾', t: e.person + 'விடம் கொடுத்தது', s: e.list || 'வாங்க கொடுத்தது' };
@@ -280,16 +296,23 @@ function showLogin(msg) {
     (API ? '' : '<input id="lapi" placeholder="Web app link" style="letter-spacing:0;font-size:14px;width:90%">') +
     '<div><input id="lpin" type="password" inputmode="numeric" placeholder="PIN"></div><div class="err" id="lerr">' + esc(msg || '') + '</div><button id="lgo">திற</button></div>';
   $('lgo').onclick = function () {
-    if (!API) { API = ($('lapi').value || '').trim(); ls('amma_api', API); }
+    if (!API) {
+      var u = ($('lapi').value || '').trim();
+      if (!/^https:\/\/script\.google\.com\/macros\/s\/.+\/exec$/.test(u)) { $('lerr').textContent = 'Web app link சரியில்லை (…/exec என்று முடிய வேண்டும்)'; return; }
+      API = u; ls('amma_api', API);
+    }
     post({ action: 'login', pin: $('lpin').value }).then(function (r) {
       if (!r.ok) { $('lerr').textContent = r.error === 'WRONGPIN' ? 'PIN தவறு' : r.error === 'LOCKED' ? '15 நிமிடம் கழித்து முயற்சி செய்யுங்கள்' : r.error; return; }
       TOKEN = r.token; ls('amma_token', TOKEN); load();
-    }, function () { $('lerr').textContent = 'இணையம் இல்லை'; });
+    }, function () { $('lerr').textContent = 'இணையம் இல்லை அல்லது link தவறு'; API = ''; ls('amma_api', null); showLogin('இணையம் இல்லை அல்லது link தவறு – link-ஐ மீண்டும் போடுங்கள்'); });
   };
 }
 (function start() {
   var m = location.hash.match(/api=([^&]+)/);
   if (m) { ls('amma_api', decodeURIComponent(m[1])); history.replaceState(null, '', location.pathname); }
+  // the earlier version stored the link and login as ab_api / ab_tok: carry them over, no new login needed
+  if (!ls('amma_api') && ls('ab_api')) ls('amma_api', ls('ab_api'));
+  if (!ls('amma_token') && ls('ab_tok')) ls('amma_token', ls('ab_tok'));
   API = ls('amma_api') || ''; TOKEN = ls('amma_token') || '';
   if (!API || !TOKEN) return showLogin();
   try { D = JSON.parse(ls('amma_cache') || 'null'); } catch (e) {}
