@@ -158,6 +158,13 @@ details.tips div { font-size: 15px; color: var(--m); background: #fff; border-ra
 .legend i { display: inline-block; width: 10px; height: 10px; border-radius: 3px; margin-right: 5px; }
 table.cmp { width: 100%; border-collapse: collapse; font-size: 14px; } .cmp th { text-align: right; color: var(--m); font-weight: 700; padding: 4px; }
 .cmp td { padding: 7px 4px; border-top: 1px solid var(--line); text-align: right; white-space: nowrap; } .cmp td:first-child { text-align: left; white-space: normal; } .cmp td.cur { font-weight: 800; }
+.swrow { margin: 0; border-radius: 14px; }
+.swrow > .fg.li { background: #fff; }
+.sw.swrow.to-l > .bg { background: linear-gradient(270deg, #c62828, #ef7d7d); }
+.sw.swrow.to-r > .bg { background: linear-gradient(90deg, #0e7458, #5fbf9b); }
+.swrow + .swrow { border-top: 1px solid var(--line); }
+.swrow > .fg.li { border-bottom: 0; }
+.swrow > .bg { padding: 0 16px; font-size: 15px; }
 /* swipe: right = add details, left = leave it */
 .sw { position: relative; margin-bottom: 12px; border-radius: 22px; }
 .sw > .bg { position: absolute; inset: 0; border-radius: inherit; display: flex; align-items: center; justify-content: space-between; padding: 0 22px; font-weight: 800; font-size: 16px; color: #fff; opacity: 0; transition: opacity .12s; }
@@ -215,8 +222,28 @@ function swEnd() {
 }
 document.addEventListener('pointerup', swEnd); document.addEventListener('pointercancel', swEnd);
 document.addEventListener('click', function (ev) { if (NOCLICK) { ev.stopPropagation(); ev.preventDefault(); } }, true);
+/* list rows: swipe left = delete (with undo), swipe right = add details / edit */
+var HIDE = {};
+function notHidden(r) { return !HIDE[r.t + ':' + r.id]; }
+function rowWrap(t, id, inner) {
+  return '<div class="sw swrow" data-sw="row:' + t + ':' + id + '"><div class="bg"><span class="l">' + (t === 'Purchases' ? '📝 விவரம் சேர்' : '✏️ திருத்து') + '</span><span class="r">நீக்கு 🗑</span></div>' + inner + '</div>';
+}
+function rowDelete(t, id) {
+  var key = t + ':' + id, x = (t === 'Purchases' ? D.Purchases : t === 'Cash' ? D.Cash : D.Errands || []).find(function (r) { return r.ID === id; });
+  var name = x ? (x.Name || (t === 'Errands' ? idam(x.Person) + ' கொடுத்தது' : t === 'Cash' ? (x.Kind === 'count' ? 'கையில் எண்ணியது' : 'வந்த பணம்') : '')) : '';
+  HIDE[key] = true; render();
+  var timer = setTimeout(function () {   // really deleted only if she doesn't undo within 5 seconds
+    call('removeEntry', t, id).then(function () { delete HIDE[key]; load(); }, function (e) { delete HIDE[key]; render(); fail(e); });
+  }, 5000);
+  toastUndo((name ? name + ' ' : '') + 'நீக்கப்பட்டது', function () { clearTimeout(timer); delete HIDE[key]; render(); });
+}
 function swiped(key, dir) {
   var k = key.split(':'), kind = k[0], id = k[1];
+  if (kind === 'row') {
+    var t = k[1], rid = k[2]; render();
+    if (dir === 'left') return rowDelete(t, rid);
+    return t === 'Purchases' ? detailSheet(rid) : editSheet(t, rid);
+  }
   if (kind === 'pend') {
     if (dir === 'right') { render(); detailSheet(id); return; }
     var p = D.Purchases.find(function (x) { return x.ID === id; }); if (!p) return;
@@ -269,7 +296,7 @@ function entries(limitDays) {
     if (c.Date >= fs) out.push({ t: 'Cash', id: c.ID, date: c.Date, at: c.CreatedAt, ic: '💵', title: (/^mathi$/i.test(c.From || '') ? 'மதி' : (c.From || 'பணம்')) + ' கொடுத்தது', sub: c.Note && c.Note.indexOf('கொடுத்தது') < 0 ? c.Note : '', amt: n(c.Amount), cls: 'in', sign: '+' }); });
   D.Purchases.forEach(function (p) { if (p.Date >= fs && p.ItemID !== 'errand') out.push({ t: 'Purchases', id: p.ID, date: p.Date, at: p.CreatedAt, ic: icon(p.ItemID, p.Name), title: (p.Detail === 'pending' ? '📝 ' : '') + p.Name + (p.Qty ? ' ' + fmtQ(p.Qty, p.Unit) : ''), sub: [byText(p), p.ParentID ? p.Note + ' விவரம்' : '', p.Detail === 'pending' ? 'விவரம் சேர்க்கலாம்' : ''].filter(Boolean).join(' · '), amt: n(p.Amount), cls: 'out', sign: '', pending: p.Detail === 'pending' }); });
   (D.Errands || []).forEach(function (e) { if (e.Date >= fs || (e.ReturnedOn || '') >= fs) out.push({ t: 'Errands', id: e.ID, date: e.ReturnedOn || e.Date, at: e.CreatedAt, ic: '🧾', title: idam(e.Person) + ' கொடுத்தது' + (e.List ? ' – ' + e.List : ''), sub: e.Status === 'closed' ? 'திரும்ப ' + inr(e.Returned) + ' · செலவு ' + inr(e.Spent) : 'இன்னும் மீதி வரவில்லை', amt: n(e.Given), cls: 'out', sign: '' }); });
-  return out.sort(function (a, b) { return String(b.date).localeCompare(String(a.date)) || String(b.at).localeCompare(String(a.at)); });
+  return out.filter(notHidden).sort(function (a, b) { return String(b.date).localeCompare(String(a.date)) || String(b.at).localeCompare(String(a.at)); });
 }
 /* ---------- 🔊 morning summary: what was spent yesterday, spoken in Tamil ---------- */
 var MORNING_TRIED = false;
@@ -353,8 +380,8 @@ function speak(text, onStart) {
   try {
     if (!window.speechSynthesis || !text) return false;
     speechSynthesis.cancel();
-    var u = new SpeechSynthesisUtterance(text); u.lang = 'ta-IN'; u.rate = 0.9; if (onStart) u.onstart = onStart;
-    var v = speechSynthesis.getVoices().find(function (x) { return /^ta/i.test(x.lang); }); if (v) u.voice = v;
+    var u = new SpeechSynthesisUtterance(text); u.lang = 'ta-IN'; u.rate = 1.0; if (onStart) u.onstart = onStart;
+    var vs = speechSynthesis.getVoices().filter(function (x) { return /^ta/i.test(x.lang); }), v = vs.find(function (x) { return x.localService; }) || vs[0]; if (v) u.voice = v;   // on-phone voice starts faster than a network one
     speechSynthesis.speak(u); return true;
   } catch (e) { return false; }
 }
@@ -416,8 +443,8 @@ function render() {
       '<div class="fg li" data-detail="' + p.ID + '"><div class="ic">' + icon(p.ItemID) + '</div><div class="tx"><b>' + esc(p.Name) + '</b><small>' + dayLabel(p.Date) + (p.PaidBy === 'errand' ? ' · ' + errPerson(p.ErrandID) : '') + '</small></div><div class="a out">' + inr(p.Amount) + '</div></div></div>'; }).join('') + '</div></div>';
   try { if (navigator.setAppBadge) { if (pend.length) navigator.setAppBadge(pend.length); else navigator.clearAppBadge(); } } catch (x) {}
   var list = entries(2);
-  h += '<div class="sec">இன்றும் நேற்றும்</div><div class="card" style="padding:4px 12px">' + (list.length ? list.map(function (x) {
-    return '<div class="li" data-del="' + x.t + ':' + x.id + '"><div class="ic">' + x.ic + '</div><div class="tx"><b>' + esc(x.title) + '</b><small>' + dayLabel(x.date) + (x.sub ? ' · ' + esc(x.sub) : '') + '</small></div><div class="a ' + x.cls + '">' + x.sign + inr(x.amt) + '</div></div>';
+  h += '<div class="sec">இன்றும் நேற்றும்<span style="margin-left:auto;font-weight:600;font-size:13px">← நீக்கு · விவரம் →</span></div><div class="card" style="padding:4px 12px">' + (list.length ? list.map(function (x) {
+    return rowWrap(x.t, x.id, '<div class="fg li" data-del="' + x.t + ':' + x.id + '"><div class="ic">' + x.ic + '</div><div class="tx"><b>' + esc(x.title) + '</b><small>' + dayLabel(x.date) + (x.sub ? ' · ' + esc(x.sub) : '') + '</small></div><div class="a ' + x.cls + '">' + x.sign + inr(x.amt) + '</div></div>');
   }).join('') : '<div class="empty">இன்னும் எதுவும் இல்லை. மேலே 🎤 அழுத்தி சொல்லுங்கள்.</div>') + '</div>' +
     (D.aiReady ? '' : '<div class="eg">⚠️ AI இன்னும் அமைக்கப்படவில்லை – எளிய வாக்கியங்கள் மட்டும் புரியும் (மதியிடம் சொல்லுங்கள்).</div>');
   $('app').innerHTML = h;
@@ -426,7 +453,7 @@ function render() {
   if ($('mcard')) {
     var heard = function () { ls('amma_spoken', today()); if (wk) ls('amma_week', today()); };
     $('mcard').onclick = function (ev) { if (ev.target.closest('#wkOpen')) { weekSheet(1); return; } speak(mb, heard); };
-    if (ls('amma_spoken') !== today() && !MORNING_TRIED) { MORNING_TRIED = true; setTimeout(function () { speak(mb, heard); }, 600); }
+    if (ls('amma_spoken') !== today() && !MORNING_TRIED) { MORNING_TRIED = true; setTimeout(function () { speak(mb, heard); }, 250); }
   }
   if ($('cntgo')) $('cntgo').onclick = function () { setCash($('cnt0').value); };
   $('hero').onclick = function () {
@@ -435,9 +462,9 @@ function render() {
       '<div class="btns"><button class="no" data-x>வேண்டாம்</button><button class="ok" id="cnt1go">சரி ✓</button></div>');
     $('cnt1').focus(); $('cnt1go').onclick = function () { setCash($('cnt1').value); };
   };
-  $('bType').onclick = function () { DETAIL = null; $('tbox').classList.toggle('on'); if ($('tbox').classList.contains('on')) $('tin').focus(); };
+  $('bType').onclick = function () { DETAIL = null; warm(); $('tbox').classList.toggle('on'); if ($('tbox').classList.contains('on')) $('tin').focus(); };
   $('tgo').onclick = function () { var t = $('tin').value.trim(); if (t) { $('tin').value = ''; $('tbox').classList.remove('on'); understand(t); } };
-  $('bCam').onclick = function () { DETAIL = null; $('cam').value = ''; $('cam').click(); };
+  $('bCam').onclick = function () { DETAIL = null; warm(); $('cam').value = ''; $('cam').click(); };
 }
 document.addEventListener('click', function (ev) {
   var sk = ev.target.closest('[data-eskip]');
@@ -495,7 +522,7 @@ function bookRows(m) {
   (D.Errands || []).forEach(function (e) { if (String(e.Date).slice(0, 7) !== m) return;
     out.push({ t: 'Errands', id: e.ID, date: e.Date, at: e.CreatedAt, k: 'give', ic: '🧾', title: idam(e.Person) + ' கொடுத்தது' + (e.List ? ' – ' + e.List : ''),
       sub: e.Note === 'ignored' && !n(e.Returned) ? 'விவரம் வேண்டாம் என்றீர்கள் · தொட்டு மீதி / விவரம் சேர்க்கலாம்' : e.Status === 'closed' ? 'திரும்ப ' + inr(e.Returned) + ' · செலவு ' + inr(e.Spent) : 'இன்னும் மீதி வரவில்லை', amt: n(e.Given), cls: 'out', sign: '' }); });
-  return out.sort(function (a, b) { return String(b.date).localeCompare(String(a.date)) || String(b.at).localeCompare(String(a.at)); });
+  return out.filter(notHidden).sort(function (a, b) { return String(b.date).localeCompare(String(a.date)) || String(b.at).localeCompare(String(a.at)); });
 }
 function renderBook() {
   var m = BOOK.m || today().slice(0, 7), rows = bookRows(m);
@@ -521,7 +548,7 @@ function renderBook() {
       day = r.date; var dt = rows.filter(function (x) { return x.date === day && x.t === 'Purchases'; }).reduce(function (t, x) { return t + x.amt; }, 0);
       h += '<div class="dayh"><span>' + dayLabel(day) + '</span><span>' + (dt ? 'செலவு ' + inr(dt) : '') + '</span></div><div class="card" style="padding:4px 12px">';
     }
-    h += '<div class="li" data-edit="' + r.t + ':' + r.id + '"><div class="ic">' + r.ic + '</div><div class="tx"><b>' + esc(r.title) + '</b><small>' + esc(r.sub) + '</small></div><div class="a ' + r.cls + '">' + r.sign + inr(r.amt) + '</div></div>';
+    h += rowWrap(r.t, r.id, '<div class="fg li" data-edit="' + r.t + ':' + r.id + '"><div class="ic">' + r.ic + '</div><div class="tx"><b>' + esc(r.title) + '</b><small>' + esc(r.sub) + '</small></div><div class="a ' + r.cls + '">' + r.sign + inr(r.amt) + '</div></div>');
   });
   if (day) h += '</div>';
   $('app').innerHTML = h;
@@ -670,13 +697,15 @@ function fail(e) {
 }
 
 /* ---------- voice ---------- */
-var REC = null;
+var REC = null, QUIET_MS = 2500;   // stop listening 2.5 s after she stops talking
 function dedupe(text) {   // same as the server: "meena meena meena 550" → "meena 550"
   var w = String(text || '').replace(/\s+/g, ' ').trim().split(' '), ch = true;
   while (ch) { ch = false; for (var n = Math.min(6, Math.floor(w.length / 2)); n >= 1 && !ch; n--) for (var i = 0; i + 2 * n <= w.length; i++) { if (w.slice(i, i + n).join(' ').toLowerCase() === w.slice(i + n, i + 2 * n).join(' ').toLowerCase()) { w.splice(i + n, n); ch = true; break; } } }
   return w.join(' ');
 }
+function warm() { try { call('ping').catch(function () {}); } catch (e) {} }   // wakes Google's server while she is still talking
 function listen() {
+  warm();
   var SR = window.SpeechRecognition || window.webkitSpeechRecognition;
   if (!SR) { $('tbox').classList.add('on'); $('tin').focus(); toast('இந்த போனில் பேச்சு வசதி இல்லை – எழுதுங்கள்'); return; }
   sheet('<div class="listen"><h2 style="text-align:center">சொல்லுங்கள்…</h2><div class="pulse">🎤</div><div class="live" id="live">கேட்கிறேன் – எல்லாவற்றையும் ஒரே தடவையில் சொல்லுங்கள்</div>' +
@@ -685,7 +714,7 @@ function listen() {
   var said = '', rec = null, done = false, cancelled = false, started = Date.now(), heard = Date.now();
   var finish = function () { if (REC !== rec && rec) return; REC = null; clearInterval(quietT); if (cancelled) return; if (said) { VOICE_IN = true; understand(said); return; } else { close(); toast('எதுவும் கேட்கவில்லை. மீண்டும் முயற்சி செய்யுங்கள்.'); } };
   // stop by itself after ~7 seconds of quiet once she has said something
-  var quietT = setInterval(function () { if (said && Date.now() - heard > 7000) { done = true; try { rec.stop(); } catch (e) { finish(); } } }, 1000);
+  var quietT = setInterval(function () { if (said && Date.now() - heard > QUIET_MS) { done = true; try { rec.stop(); } catch (e) { finish(); } } }, 1000);
   // Android Chrome repeats earlier words in each new result ("meena", "meena meena 550"…): keep only the newest version of each phrase
   var finals = [];
   var onresult = function (e) {
@@ -708,12 +737,13 @@ function listen() {
     rec.onerror = function (e) { if (e.error === 'not-allowed') { cancelled = true; REC = null; clearInterval(quietT); close(); toast('மைக் அனுமதி தேவை (Chrome-ல் Allow அழுத்துங்கள்)'); } };
     rec.onend = function () {
       if (REC !== rec || cancelled) return;
-      if (!done && Date.now() - started < 120000 && (!said || Date.now() - heard < 7000)) { try { begin(); return; } catch (e) {} }
+      if (!done && Date.now() - started < 120000 && (!said || Date.now() - heard < QUIET_MS)) { try { begin(); return; } catch (e) {} }
       finish();
     };
     rec.start();
   };
-  $('ldone').onclick = function () { done = true; try { rec.stop(); } catch (e) { finish(); } };
+  // முடிந்தது: use what is on screen right away – don't wait for the phone's final result
+  $('ldone').onclick = function () { done = true; var r0 = rec; REC = rec; finish(); try { r0.abort(); } catch (e) {} };
   $('lstop').onclick = function () { cancelled = true; REC = null; clearInterval(quietT); try { rec.abort(); } catch (e) {} close(); };
   try { begin(); } catch (e) { clearInterval(quietT); close(); toast('மைக் தொடங்க முடியவில்லை'); }
 }
@@ -780,6 +810,7 @@ function listenOnce(cb) {   // one short answer by voice
   toast('🎤 சொல்லுங்கள்…'); try { r.start(); } catch (x) { toast('மைக் தொடங்க முடியவில்லை'); }
 }
 var VOICE_IN = false;
+function gotData(x) { if (x && x.data) { D = x.data; ls('amma_cache', JSON.stringify(D)); render(); } else load(); }
 function totalText(total, es) {
   var parts = es.filter(function (e) { return e.type === 'spent' && !e.errand_id && !e.rest; }).reduce(function (t, e) { return t + n(e.amount); }, 0);
   var rest = Math.round((total - parts) * 100) / 100;
@@ -816,7 +847,8 @@ function confirmSheet(r, preview) {
     : '<div class="btns"><button class="ok" data-x>சரி</button></div>';
   sheet(h);
   var open = es.filter(function (e) { return e.ask && !(n(e.qty) > 0); });
-  if (r._voice && open.length && !r._quiet) { speak(open.map(function (e) { return e.ask.q; }).join(' ')); r._quiet = true; }
+  var restQ = r.totalCheck && r.totalCheck.rest > 0.5 ? 'மீதி ' + Math.round(r.totalCheck.rest) + ' ரூபாய் எதற்கு? இப்போது சொல்லலாம், அல்லது பிறகு.' : '';
+  if (r._voice && (open.length || restQ) && !r._quiet) { speak(open.map(function (e) { return e.ask.q; }).concat(restQ ? [restQ] : []).join(' ')); r._quiet = true; }
   if (!es.length) return;
   if ($('cDate')) $('cDate').addEventListener('change', function () {
     var v = this.value; if (!/^\d{4}-\d{2}-\d{2}$/.test(v) || v > today()) { toast('இன்று அல்லது முந்தைய நாள் மட்டும்'); return; }
@@ -844,15 +876,18 @@ function confirmSheet(r, preview) {
   $('csave').onclick = function () {
     var keep = es.filter(function (e) { return e.type === 'errand_return' ? true : n(e.amount) > 0; });
     if (!keep.length) { close(); return; }
-    busy('சேமிக்கிறேன்…');
     if (r.detail) {
       var sm = keep.reduce(function (t, x) { return t + n(x.amount); }, 0);
       if (sm > r.detail.amount + 0.5) { close(); toast('விவரம் ' + inr(sm) + ' – ' + inr(r.detail.amount) + '-ஐ விட அதிகம். தொகையை சரிசெய்யுங்கள்.'); confirmSheet(Object.assign({}, r, { entries: es }), preview); return; }
-      call('saveDetail', r.detail.id, keep, r.said, r.raw || '').then(function (x) { close(); toast(x.rest ? 'சேமிக்கப்பட்டது ✓ இன்னும் ' + inr(x.rest) + ' விவரம் இல்லை' : 'சேமிக்கப்பட்டது ✓ முழு விவரம்'); load(); }, fail);
+      close(); toast('சேமிக்கிறேன்…');
+      call('saveDetail', r.detail.id, keep, r.said, r.raw || '').then(function (x) { gotData(x); toast(x.rest ? 'சேமிக்கப்பட்டது ✓ இன்னும் ' + inr(x.rest) + ' விவரம் இல்லை' : 'சேமிக்கப்பட்டது ✓ முழு விவரம்'); }, saveFailed);
       return;
     }
     var sd = (keep.filter(function (e) { return e.type !== 'cash_count'; })[0] || {}).date;
-    call('saveUnderstood', keep, r.said, 'amma', r.raw || '').then(function () { close(); toast('சேமிக்கப்பட்டது ✓' + (sd && sd !== today() ? ' – ' + dayLabel(sd) : '')); load(); }, fail);
+    // the sheet closes at once; saving finishes in the background (if it fails, the check screen comes back)
+    close(); toast('சேமிக்கப்பட்டது ✓' + (sd && sd !== today() ? ' – ' + dayLabel(sd) : ''));
+    call('saveUnderstood', keep, r.said, 'amma', r.raw || '').then(gotData, saveFailed);
+    function saveFailed(e) { if (e && e.message === 'AUTH') return; toast('⚠️ சேமிக்க முடியவில்லை – மீண்டும் "சரி" அழுத்துங்கள்'); confirmSheet(Object.assign({}, r, { entries: es, _quiet: true }), preview); }
   };
 }
 
