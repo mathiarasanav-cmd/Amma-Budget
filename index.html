@@ -273,7 +273,7 @@ function call(fn) {
   });
 }
 function load() {
-  return call('getAll').then(function (d) { D = d; ls('amma_cache', JSON.stringify(d)); render(); })
+  return call('getAll', { lite: true }).then(function (d) { D = d; ls('amma_cache', JSON.stringify(d)); render(); })
     .catch(function (e) { if (e.message !== 'AUTH') { if (!D) { try { D = JSON.parse(ls('amma_cache') || 'null'); } catch (x) {} } if (D) render(); toast('இணையம் இல்லை – பழைய தகவல் காட்டப்படுகிறது'); } });
 }
 
@@ -810,6 +810,22 @@ function listenOnce(cb) {   // one short answer by voice
   toast('🎤 சொல்லுங்கள்…'); try { r.start(); } catch (x) { toast('மைக் தொடங்க முடியவில்லை'); }
 }
 var VOICE_IN = false;
+/* show what she just saved at once, before Google answers (the real data replaces it a moment later) */
+function showNow(es) {
+  try {
+    var c = calc(), now = new Date().toISOString();
+    es.forEach(function (e, i) {
+      var id = 'tmp' + Date.now() + i, d = e.date || today(), m = d.slice(0, 7);
+      if (e.type === 'spent') D.Purchases.push({ ID: id, Date: d, Month: m, ItemID: e.item_id || 'other', Name: e.item, Cat: e.cat || 'மற்றவை', Qty: e.qty || '', Unit: e.unit || '', Amount: n(e.amount),
+        PaidBy: e.errand_id ? 'errand' : (e.paid_by || 'amma'), ErrandID: e.errand_id || '', Detail: e.lump ? 'pending' : '', CreatedAt: now });
+      else if (e.type === 'received') D.Cash.push({ ID: id, Date: d, Month: m, Amount: n(e.amount), Kind: 'received', From: e.from || 'Mathi', CreatedAt: now });
+      else if (e.type === 'give_errand') (D.Errands = D.Errands || []).push({ ID: id, Date: d, Month: m, Person: e.person, Given: n(e.amount), List: e.list || '', Status: 'open', CreatedAt: now });
+      else if (e.type === 'errand_return') { var er = (D.Errands || []).find(function (x) { return x.ID === e.errand_id; }); if (er) { er.Status = 'closed'; er.Returned = n(e.returned); er.Spent = Math.max(0, n(er.Given) - n(e.returned)); er.ReturnedOn = d; } }
+      else if (e.type === 'cash_count') D.Cash.push({ ID: id, Date: today(), Month: today().slice(0, 7), Amount: n(e.amount) - c.cash, Kind: 'count', CreatedAt: now });
+    });
+    render();
+  } catch (x) {}
+}
 function gotData(x) { if (x && x.data) { D = x.data; ls('amma_cache', JSON.stringify(D)); render(); } else load(); }
 function totalText(total, es) {
   var parts = es.filter(function (e) { return e.type === 'spent' && !e.errand_id && !e.rest; }).reduce(function (t, e) { return t + n(e.amount); }, 0);
@@ -886,8 +902,9 @@ function confirmSheet(r, preview) {
     var sd = (keep.filter(function (e) { return e.type !== 'cash_count'; })[0] || {}).date;
     // the sheet closes at once; saving finishes in the background (if it fails, the check screen comes back)
     close(); toast('சேமிக்கப்பட்டது ✓' + (sd && sd !== today() ? ' – ' + dayLabel(sd) : ''));
+    var backup = JSON.stringify(D); showNow(keep);   // list and cash change on screen right away
     call('saveUnderstood', keep, r.said, 'amma', r.raw || '').then(gotData, saveFailed);
-    function saveFailed(e) { if (e && e.message === 'AUTH') return; toast('⚠️ சேமிக்க முடியவில்லை – மீண்டும் "சரி" அழுத்துங்கள்'); confirmSheet(Object.assign({}, r, { entries: es, _quiet: true }), preview); }
+    function saveFailed(e) { try { D = JSON.parse(backup); render(); } catch (x) {} if (e && e.message === 'AUTH') return; toast('⚠️ சேமிக்க முடியவில்லை – மீண்டும் "சரி" அழுத்துங்கள்'); confirmSheet(Object.assign({}, r, { entries: es, _quiet: true }), preview); }
   };
 }
 
