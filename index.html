@@ -165,6 +165,13 @@ table.cmp { width: 100%; border-collapse: collapse; font-size: 14px; } .cmp th {
 .swrow + .swrow { border-top: 1px solid var(--line); }
 .swrow > .fg.li { border-bottom: 0; }
 .swrow > .bg { padding: 0 16px; font-size: 15px; }
+.qbig { font-size: 46px; font-weight: 800; text-align: center; color: var(--gd); margin: 6px 0 4px; }
+.qcmp { display: flex; align-items: center; gap: 8px; margin: 8px 0; }
+.qcmp > div { flex: 1; background: var(--g2); border-radius: 16px; padding: 10px 12px; text-align: center; }
+.qcmp small { display: block; color: var(--m); font-size: 13px; } .qcmp b { display: block; font-size: 24px; color: var(--gd); } .qcmp span { font-size: 13px; color: var(--m); }
+.qcmp i { font-style: normal; color: var(--m); }
+.qrow { display: flex; gap: 10px; padding: 8px 2px; border-bottom: 1px solid var(--line); font-size: 15px; } .qrow:last-child { border-bottom: 0; }
+.qrow span:first-child { color: var(--m); min-width: 70px; } .qrow span:nth-child(2) { flex: 1; } .qrow small { color: var(--m); }
 /* swipe: right = add details, left = leave it */
 .sw { position: relative; margin-bottom: 12px; border-radius: 22px; }
 .sw > .bg { position: absolute; inset: 0; border-radius: inherit; display: flex; align-items: center; justify-content: space-between; padding: 0 22px; font-weight: 800; font-size: 16px; color: #fff; opacity: 0; transition: opacity .12s; }
@@ -376,11 +383,11 @@ function weekSheet(back) {
   $('wkSpeak').onclick = function () { speak(weekVoice(w)); };
 }
 function isSunday() { return new Date().getDay() === 0; }
-function speak(text, onStart) {
+function speak(text, onStart, onEnd) {
   try {
     if (!window.speechSynthesis || !text) return false;
     speechSynthesis.cancel();
-    var u = new SpeechSynthesisUtterance(text); u.lang = 'ta-IN'; u.rate = 1.0; if (onStart) u.onstart = onStart;
+    var u = new SpeechSynthesisUtterance(text); u.lang = 'ta-IN'; u.rate = 1.0; if (onStart) u.onstart = onStart; if (onEnd) u.onend = onEnd;
     var vs = speechSynthesis.getVoices().filter(function (x) { return /^ta/i.test(x.lang); }), v = vs.find(function (x) { return x.localService; }) || vs[0]; if (v) u.voice = v;   // on-phone voice starts faster than a network one
     speechSynthesis.speak(u); return true;
   } catch (e) { return false; }
@@ -421,7 +428,7 @@ function render() {
     '<button class="act type" id="bType"><span class="i">✍️</span><span>எழுதுங்கள்</span></button>' +
     '<button class="act cam" id="bCam"><span class="i">📷</span><span>பேப்பர்</span></button></div>' +
     '<div class="typebox" id="tbox"><textarea id="tin" rows="2" placeholder="எ.கா. 500 rs 1 kg mutton vaanginen"></textarea><button id="tgo">சரி</button></div>' +
-    '<details class="tips"><summary>💡 எப்படி சொல்லலாம்? (எடுத்துக்காட்டுகள்)</summary><div>"மதி 5000 கொடுத்தான்"<br>"250 காய்கறி வாங்கினேன்"<br>"தாத்தா கிட்ட 1000 கொடுத்தேன் மளிகை வாங்க"<br>"பாக்கியா கிட்ட 500 கொடுத்தேன்"<br>"நேத்து 200 காய்கறி"<br>"20ஆம் தேதி 450 மருந்து"<br>"தாத்தா 780 மளிகை, 30 டீ, 100 பெட்ரோல், 90 மீதி"</div></details>' +
+    '<details class="tips"><summary>💡 எப்படி சொல்லலாம்? (எடுத்துக்காட்டுகள்)</summary><div><b>🙋 கேள்விகள்:</b> "இன்னைக்கு எவ்வளவு செலவு?" · "போன மாசம் எவ்வளவு?" · "இந்த மாசம் மட்டன் எவ்வளவு?" · "போன மாசம் இந்த மாசம் மட்டன் கிலோ விலை?" · "கையில எவ்வளவு இருக்கு?"<br><b>✍️ பதிவு:</b><br>"மதி 5000 கொடுத்தான்"<br>"250 காய்கறி வாங்கினேன்"<br>"தாத்தா கிட்ட 1000 கொடுத்தேன் மளிகை வாங்க"<br>"பாக்கியா கிட்ட 500 கொடுத்தேன்"<br>"நேத்து 200 காய்கறி"<br>"20ஆம் தேதி 450 மருந்து"<br>"தாத்தா 780 மளிகை, 30 டீ, 100 பெட்ரோல், 90 மீதி"</div></details>' +
     '<button class="bookbtn" id="bBook">📒 எல்லா கணக்கும் பார்க்க / திருத்த</button>';
   open.forEach(function (e) {
     h += '<div class="sw" data-sw="err:' + e.ID + '"><div class="bg"><span class="l">🎤 என்ன வாங்கினார்?</span><span class="r">விவரம் வேண்டாம் ✕</span></div>' +
@@ -768,6 +775,7 @@ $('cam').onchange = function () {
 var PENDING = null;
 function understand(text, image, preview) {
   var byVoice = VOICE_IN; VOICE_IN = false;
+  if (!image && !DETAIL && isQuestion(text)) { askQuestion(text, byVoice); return; }   // 🙋 a question, not an entry
   busy(image ? 'பேப்பரை படிக்கிறேன்…' : 'புரிந்துகொள்கிறேன்…');
   var det = DETAIL; DETAIL = null;
   (det ? call('understandDetail', det, text, image || null) : call('understand', text, 'amma', image || null))
@@ -810,6 +818,147 @@ function listenOnce(cb) {   // one short answer by voice
   toast('🎤 சொல்லுங்கள்…'); try { r.start(); } catch (x) { toast('மைக் தொடங்க முடியவில்லை'); }
 }
 var VOICE_IN = false;
+
+/* ================= 🙋 questions: "இன்னைக்கு எவ்வளவு செலவு?", "போன மாசம் மட்டன் எவ்வளவு?" ================= */
+var Q_WORD = /\?|evvalavu|evlo|evvalo|evalo|எவ்வளவு|எவ்ளோ|எவ்ளவு|ethana|எத்தனை|\benna\b|என்ன|how much|how many|\bwhat\b|sollu|சொல்லு|சொல்லுங்க|kaattu|காட்டு|compare|ஒப்பிடு|\bvida\b|\bvs\b|ஆச்சா|achaa|aacha/i;
+function isQuestion(t) {
+  t = String(t || '').toLowerCase(); if (!Q_WORD.test(t)) return false;
+  // a number that is not a date means she is telling an amount (an entry), not asking
+  var nums = t.replace(/(\d{1,2})\s*(?:ஆம்|ம்|aam|am)?\s*(?:தேதி|tharikk?u|thethi|(?:th|st|nd|rd)\b)/g, '').match(/\d+/g);
+  return !nums;
+}
+var QI = [
+  [/mutton|மட்டன்|ஆட்டு/, 'மட்டன்', function (p) { return /மட்டன்|mutton|ஆட்டு/i.test(p.Name); }],
+  [/chicken|சிக்கன்|கோழி|kozhi/, 'சிக்கன்', function (p) { return /சிக்கன்|chicken|கோழி/i.test(p.Name); }],
+  [/\bmeen\b|மீன்|fish/, 'மீன்', function (p) { return /மீன்|fish|meen/i.test(p.Name); }],
+  [/eral|இறால்|prawn/, 'இறால்', function (p) { return /இறால்|prawn/i.test(p.Name); }],
+  [/asaivam|அசைவம்|non ?veg/, 'அசைவம்', function (p) { return p.Cat === 'அசைவம்'; }],
+  [/muttai|முட்டை|egg/, 'முட்டை', function (p) { return p.ItemID === 'egg' || /முட்டை/.test(p.Name); }],
+  [/paal|பால்|milk/, 'பால்', function (p) { return p.ItemID === 'milk' || /^பால்/.test(p.Name); }],
+  [/kaikari|காய்கறி|vegetable/, 'காய்கறி', function (p) { return p.ItemID === 'veg' || /காய்கறி/.test(p.Name); }],
+  [/pazham|பழம்|பழங்கள்|fruit/, 'பழங்கள்', function (p) { return p.ItemID === 'fruit' || /பழ/.test(p.Name); }],
+  [/maligai|மளிகை|grocer/, 'மளிகை', function (p) { return p.Cat === 'மளிகை' || /மளிகை/.test(p.Name); }],
+  [/arisi|அரிசி|rice/, 'அரிசி', function (p) { return p.ItemID === 'rice' || /அரிசி/.test(p.Name); }],
+  [/ennai|எண்ணெய்|\boil\b/, 'எண்ணெய்', function (p) { return p.ItemID === 'oil' || p.ItemID === 'goil' || /எண்ணெய்/.test(p.Name); }],
+  [/paruppu|பருப்பு|\bdal\b/, 'பருப்பு', function (p) { return /பருப்பு/.test(p.Name); }],
+  [/sakkarai|சர்க்கரை|sugar/, 'சர்க்கரை', function (p) { return p.ItemID === 'sugar' || /சர்க்கரை/.test(p.Name); }],
+  [/marunthu|மருந்து|medicine|tablet|மாத்திரை/, 'மருந்து', function (p) { return p.Cat === 'மருந்து'; }],
+  [/petrol|பெட்ரோல்/, 'பெட்ரோல்', function (p) { return p.ItemID === 'petrol' || /பெட்ரோல்/.test(p.Name); }],
+  [/\btea\b|டீ|snack|ஸ்நாக்/, 'டீ / ஸ்நாக்ஸ்', function (p) { return p.ItemID === 'snack'; }],
+  [/(^|\s)(poo|பூ)(\s|$)|flower/, 'பூ', function (p) { return /^பூ$|பூ /.test(p.Name) || p.ItemID === 'pooja'; }],
+  [/\bgas\b|கேஸ்|cylinder|சிலிண்டர்/, 'கேஸ்', function (p) { return p.ItemID === 'gas'; }],
+  [/current|\beb\b|மின்|கரண்ட்/, 'கரண்ட் பில்', function (p) { return p.ItemID === 'eb'; }]
+];
+var QMONTHS = [/jan|ஜனவரி/, /feb|பிப்ரவரி/, /march|மார்ச்/, /april|ஏப்ரல்/, /\bmay\b|மே மாத|மே மாச/, /june|ஜூன்/, /july|ஜூலை/, /aug|ஆகஸ்ட்/, /sep|செப்டம்பர்/, /oct|அக்டோபர்/, /nov|நவம்பர்/, /dec|டிசம்பர்/];
+function dShift(k) { var d = new Date(); d.setDate(d.getDate() + k); return ymd(d); }
+function monthRange(m) { var y = +m.slice(0, 4), mo = +m.slice(5) - 1, last = new Date(y, mo + 1, 0); return { from: m + '-01', to: ymd(last) }; }
+function periodsOf(t) {   // every period she mentions, in the order she says them
+  var P = [], add = function (re, mk) { var m = t.match(re); if (m) P.push(Object.assign({ at: m.index }, mk())); };
+  var wk = function (back) { var d = new Date(); d.setHours(12); var st = new Date(d); st.setDate(d.getDate() - d.getDay() - 7 * back); var en = new Date(st); en.setDate(st.getDate() + 6); return { from: ymd(st), to: back ? ymd(en) : today() }; };
+  add(/munth?a\s*neth?u|முந்தா\s*நே(த்து|ற்று)|day before yesterday/, function () { return { from: dShift(-2), to: dShift(-2), label: 'முந்தாநேற்று', kind: 'day' }; });
+  if (!P.length) add(/nethu|neththu|நேத்து|நேற்று|yesterday/, function () { return { from: dShift(-1), to: dShift(-1), label: 'நேற்று', kind: 'day' }; });
+  add(/inn?ik?k?[ui]|innaikku|இன்னைக்கு|இன்று|இன்றைக்கு|today/, function () { return { from: today(), to: today(), label: 'இன்று', kind: 'day' }; });
+  add(/pona\s*vaaram|pona\s*varam|போன\s*வாரம்|கடந்த\s*வாரம்|last\s*week/, function () { return Object.assign(wk(1), { label: 'போன வாரம்', kind: 'week' }); });
+  add(/intha\s*vaaram|intha\s*varam|இந்த\s*வாரம்|this\s*week/, function () { return Object.assign(wk(0), { label: 'இந்த வாரம்', kind: 'week' }); });
+  add(/pona\s*maa?sam|போன\s*மா(தம்|சம்)|கடந்த\s*மாதம்|last\s*month/, function () { var m = addMonth(today().slice(0, 7), -1); return Object.assign(monthRange(m), { label: 'போன மாதம்', kind: 'month', m: m }); });
+  add(/intha\s*maa?sam|இந்த\s*மா(தம்|சம்)|this\s*month/, function () { var m = today().slice(0, 7); return Object.assign(monthRange(m), { to: today(), label: 'இந்த மாதம்', kind: 'month', m: m }); });
+  add(/(\d{1,2})\s*(?:ஆம்|ம்|aam|am)?\s*(?:தேதி|tharikk?u|thethi|th\b|st\b|nd\b|rd\b)/, function () { var dd = +t.match(/(\d{1,2})\s*(?:ஆம்|ம்|aam|am)?\s*(?:தேதி|tharikk?u|thethi|th\b|st\b|nd\b|rd\b)/)[1], now = new Date(), d = new Date(now.getFullYear(), now.getMonth(), dd); if (dd > now.getDate()) d = new Date(now.getFullYear(), now.getMonth() - 1, dd); return { from: ymd(d), to: ymd(d), label: dd + ' ' + MN[d.getMonth()], kind: 'day' }; });
+  QMONTHS.forEach(function (re, i) { add(re, function () { var y = new Date().getFullYear(), m = y + '-' + ('0' + (i + 1)).slice(-2); if (m > today().slice(0, 7)) m = (y - 1) + m.slice(4); return Object.assign(monthRange(m), { label: MN[i] + ' மாதம்', kind: 'month', m: m }); }); });
+  P.sort(function (a, b) { return a.at - b.at; });
+  return P.filter(function (p, i) { return !P.slice(0, i).some(function (q) { return q.from === p.from && q.to === p.to; }); });
+}
+function parseQ(text) {
+  var t = String(text || '').toLowerCase(), q = { text: text, metric: 'spent', item: null, periods: periodsOf(t) };
+  QI.forEach(function (x) { if (!q.item && x[0].test(t)) q.item = { label: x[1], test: x[2] }; });
+  if (!q.item) {   // any other item: a word she said that appears in her own entries ("தக்காளி", "சோப்பு")
+    var STOP = /^(evvalavu|evlo|evvalo|எவ்வளவு|எவ்ளோ|எத்தனை|என்ன|enna|intha|இந்த|pona|போன|கடந்த|maa?sam|மாதம்|மாசம்|vaaram|வாரம்|inn?ik?k?[ui]|இன்னைக்கு|இன்று|nethu|நேத்து|நேற்று|selavu|செலவு|ஆச்சு|aachu|kilo|கிலோ|விலை|vilai|rate|vida|விட|la|ல|ku|க்கு|vaanginen|வாங்கினேன்|வாங்கியது|month|week|today|how|much|what|spent|sollu|சொல்லு|மொத்தம்|motham|total)$/;
+    t.replace(/[?.,!]/g, ' ').split(/\s+/).filter(function (w) { return w.length >= 2 && !STOP.test(w); }).some(function (w) {
+      var hit = D.Purchases.find(function (p) { var nm = String(p.Name || '').toLowerCase(); return nm && (nm.indexOf(w) >= 0 || (nm.length >= 3 && w.indexOf(nm) >= 0)); });
+      if (hit) { var nm0 = String(hit.Name).replace(/\s*\(.*\)$/, ''); q.item = { label: nm0, test: function (p) { var x = String(p.Name || '').toLowerCase(); return x.indexOf(w) >= 0 || (x.length >= 3 && w.indexOf(x) >= 0); } }; return true; }
+      return false;
+    });
+  }
+  if (/kaila|kaiyila|கையில|கைல|கையிருப்பு|cash|balance/.test(t) && !q.periods.length) q.metric = 'cash';
+  else if (/vandh|வந்தது|வந்த\b|received|income|kuduthan|kuduthaar|கொடுத்தான்|கொடுத்தார்|thandhan|தந்தான்/.test(t) && !q.item) q.metric = 'received';
+  else if (/(thatha|தாத்தா|bakkiya|பாக்கியா|mathi|மதி).{0,12}(kitta|கிட்ட|இடம்)/.test(t)) q.metric = 'with';
+  q.compare = q.periods.length > 1 || /compare|ஒப்பிடு|ஒப்பீடு|\bvida\b|விட|\bvs\b|vithiyasam|வித்தியாசம்|munna|முன்ன/.test(t);
+  q.perUnit = /kilo|கிலோ|\bkg\b|per|விலை|vilai|rate|ரேட்/.test(t);
+  if (!q.periods.length) q.periods = periodsOf(q.item ? 'intha maasam' : 'inniki');
+  if (q.compare && q.periods.length === 1) {   // "this month vs before": add the period just before
+    var p0 = q.periods[0], prev;
+    if (p0.kind === 'month') { var m = addMonth(p0.m, -1); prev = Object.assign(monthRange(m), { label: p0.label === 'இந்த மாதம்' ? 'போன மாதம்' : MN[+m.slice(5) - 1] + ' மாதம்', kind: 'month', m: m }); }
+    else if (p0.kind === 'week') { var f = new Date(p0.from + 'T12:00:00'); f.setDate(f.getDate() - 7); var e = new Date(f); e.setDate(f.getDate() + 6); prev = { from: ymd(f), to: ymd(e), label: 'போன வாரம்', kind: 'week' }; }
+    else { var d = new Date(p0.from + 'T12:00:00'); d.setDate(d.getDate() - 1); prev = { from: ymd(d), to: ymd(d), label: dayLabel(ymd(d)), kind: 'day' }; }
+    q.periods = [prev, p0];
+  }
+  if (q.compare && q.periods.length > 1 && q.periods[0].from > q.periods[1].from) q.periods.reverse();   // older first
+  return q;
+}
+function qStats(q, p) {
+  var rows = D.Purchases.filter(function (x) { return x.Date >= p.from && x.Date <= p.to && (!q.item || q.item.test(x)); });
+  var amt = rows.reduce(function (t, x) { return t + n(x.Amount); }, 0), byU = {};
+  rows.forEach(function (x) { if (n(x.Qty) > 0 && x.Unit) { var u = byU[x.Unit] = byU[x.Unit] || { q: 0, a: 0 }; u.q += n(x.Qty); u.a += n(x.Amount); } });
+  var unit = Object.keys(byU).sort(function (a, b) { return byU[b].a - byU[a].a; })[0], uq = unit ? byU[unit] : null;
+  var un = q.item || p.kind !== 'month' ? 0 : -D.Cash.filter(function (c) { return c.Kind === 'count' && n(c.Amount) < 0 && c.Date >= p.from && c.Date <= p.to; }).reduce(function (t, c) { return t + n(c.Amount); }, 0);
+  return { p: p, rows: rows, amt: amt, unit: unit, qty: uq ? Math.round(uq.q * 100) / 100 : 0, per: uq && uq.q ? uq.a / uq.q : 0, partial: uq && uq.a < amt - 0.5, un: un };
+}
+var UNIT_SAY = { kg: 'கிலோ', L: 'லிட்டர்', packet: 'பாக்கெட்', pcs: '' };
+function sayStat(q, s) {
+  if (!s.amt) return s.p.label + ' ' + (q.item ? q.item.label + ' வாங்கவில்லை.' : 'செலவு எதுவும் பதிவு இல்லை.');
+  var t = s.p.label + ' ' + (q.item ? q.item.label + ' ' : '') + rs(s.amt) + (q.item ? '' : ' செலவு');
+  if (q.item && s.qty) t += ', ' + fmtQ(s.qty, s.unit).trim() + (s.unit === 'pcs' && q.item.label === 'முட்டை' ? ' முட்டை' : '') + (s.unit !== 'pcs' ? ', ஒரு ' + UNIT_SAY[s.unit] + ' ' + rs(s.per) : ', ஒன்று ' + rs(s.per));
+  if (q.item) t += ' (' + s.rows.length + ' தடவை)';
+  if (s.un) t += '. இதைத் தவிர பதிவு செய்யாதது ' + rs(s.un);
+  return t + '.';
+}
+function answerQ(q) {
+  var c = calc();
+  if (q.metric === 'cash') return { say: 'இப்போது கையில் ' + rs(c.cash) + ' இருக்கு.' + withPeople().map(function (x) { return ' ' + idam(x.p) + ' ' + rs(x.a) + '.'; }).join(''), big: inr(c.cash), stats: [] };
+  if (q.metric === 'with') { var w = withPeople(); return { say: w.length ? w.map(function (x) { return idam(x.p) + ' ' + rs(x.a) + ' இருக்கு.'; }).join(' ') : 'யாரிடமும் பணம் இல்லை – எல்லாம் கணக்கு முடிந்தது.', big: w.length ? inr(w.reduce(function (t, x) { return t + x.a; }, 0)) : '₹0', stats: [] }; }
+  if (q.metric === 'received') {
+    var rr = q.periods.map(function (p) { var a = D.Cash.filter(function (x) { return x.Kind !== 'count' && n(x.Amount) > 0 && x.Date >= p.from && x.Date <= p.to; }).reduce(function (t, x) { return t + n(x.Amount); }, 0); return { p: p, amt: a }; });
+    return { say: rr.map(function (r) { return r.p.label + ' ' + rs(r.amt) + ' வந்தது.'; }).join(' '), big: inr(rr[rr.length - 1].amt), stats: [] };
+  }
+  var st = q.periods.map(function (p) { return qStats(q, p); }), say = st.map(function (s) { return sayStat(q, s); }).join(' ');
+  if (st.length === 2) {
+    var a = st[0], b = st[1];
+    if (q.item && a.per && b.per && a.unit === b.unit) { var dp = Math.round(b.per - a.per); say += ' ஒரு ' + (UNIT_SAY[a.unit] || 'ஒன்று') + ' விலை ' + (dp > 0 ? rs(dp) + ' அதிகம்.' : dp < 0 ? rs(-dp) + ' குறைவு.' : 'அதே தான்.'); }
+    else { var d = Math.round(b.amt + b.un - a.amt - a.un); say += ' ' + b.p.label + ' ' + (d > 0 ? rs(d) + ' அதிகம்.' : d < 0 ? rs(-d) + ' குறைவு.' : 'அதே அளவு.'); }
+  }
+  return { say: say, big: inr(st[st.length - 1].amt), stats: st };
+}
+function detailsOf(q, A) {   // the follow-up: what it was spent on
+  var s = A.stats[A.stats.length - 1]; if (!s || !s.rows.length) return { say: '', html: '' };
+  if (q.item) {
+    var r = s.rows.slice().sort(function (a, b) { return String(b.Date).localeCompare(String(a.Date)); });
+    return { say: r.slice(0, 6).map(function (x) { return dayLabel(x.Date) + ' ' + (x.Qty ? fmtQ(x.Qty, x.Unit) + ' ' : '') + Math.round(n(x.Amount)); }).join(', ') + '.',
+             html: r.map(function (x) { return '<div class="qrow"><span>' + dayLabel(x.Date) + '</span><span>' + esc(x.Name) + (x.Qty ? ' · ' + fmtQ(x.Qty, x.Unit) : '') + (n(x.Qty) > 0 ? ' <small>(' + perUnit(x) + ')</small>' : '') + '</span><b>' + inr(x.Amount) + '</b></div>'; }).join('') };
+  }
+  var g = {}; s.rows.forEach(function (x) { var k = String(x.Name || 'மற்றவை').replace(/\s*\(.*\)$/, ''); g[k] = (g[k] || 0) + n(x.Amount); });
+  var it = Object.keys(g).map(function (k) { return { k: k, a: g[k] }; }).sort(function (a, b) { return b.a - a.a; });
+  return { say: it.slice(0, 6).map(function (x) { return x.k + ' ' + Math.round(x.a); }).join(', ') + (it.length > 6 ? ', மற்றவை ' + Math.round(it.slice(6).reduce(function (t, x) { return t + x.a; }, 0)) : '') + '.',
+           html: it.map(function (x) { return '<div class="qrow"><span style="flex:1;color:inherit">' + esc(x.k) + '</span><b>' + inr(x.a) + '</b></div>'; }).join('') };
+}
+var YES = /ஆமா|ஆம்|aama|aamaa|\byes\b|சொல்லு|sollu|\bok\b|சரி|seri|venum|வேணும்|வேண்டும்/i;
+function askQuestion(text, byVoice, q0) {
+  var q = q0 || parseQ(text), A = answerQ(q), Dt = A.stats.length ? detailsOf(q, A) : { say: '', html: '' };
+  var cmp = A.stats.length === 2 ? '<div class="qcmp">' + A.stats.map(function (s) { return '<div><small>' + esc(s.p.label) + '</small><b>' + inr(s.amt) + '</b>' + (s.qty ? '<span>' + fmtQ(s.qty, s.unit) + (s.per ? ' · ' + inr(s.per) + '/' + (UNIT_SAY[s.unit] || 'ஒன்று') : '') + '</span>' : '') + '</div>'; }).join('<i>→</i>') + '</div>' : '';
+  var one = A.stats.length === 1 && q.item && A.stats[0].qty ? '<div class="said" style="text-align:center">' + fmtQ(A.stats[0].qty, A.stats[0].unit) + ' · ' + inr(A.stats[0].per) + '/' + (UNIT_SAY[A.stats[0].unit] || 'ஒன்று') + '</div>' : '';
+  sheet('<h2>🙋 ' + esc(text) + '</h2>' + (cmp || '<div class="qbig">' + A.big + '</div>' + one) +
+    '<div class="reply" style="font-weight:600">' + esc(A.say) + '</div>' +
+    (Dt.html ? '<div id="qdet" style="display:none" class="card" >' + Dt.html + '</div>' : '') +
+    '<div class="btns">' + (Dt.html ? '<button class="no" id="qMore">📋 விவரம்</button>' : '') + '<button class="no" id="qSay">🔊 மீண்டும்</button><button class="ok" data-x>சரி</button></div>' +
+    '<div class="eg" style="margin-top:10px">இன்னும் கேளுங்கள்: 🎤 அழுத்தி "போன மாசம் மட்டன் எவ்வளவு?"</div>');
+  var showMore = function () { var el = $('qdet'); if (el) el.style.display = 'block'; var b = $('qMore'); if (b) b.style.display = 'none'; };
+  $('qSay').onclick = function () { speak(A.say); };
+  if ($('qMore')) $('qMore').onclick = function () { showMore(); speak(Dt.say); };
+  var ask = Dt.html ? ' விவரம் சொல்லட்டுமா?' : '';
+  speak(A.say + ask, null, function () {   // then listen for "ஆமா" (only when she asked by voice)
+    if (!byVoice || !Dt.html || !$('qdet')) return;
+    listenOnce(function (ans) { if (YES.test(ans || '')) { showMore(); speak(Dt.say); } });
+  });
+}
+
 /* show what she just saved at once, before Google answers (the real data replaces it a moment later) */
 function showNow(es) {
   try {
